@@ -15,7 +15,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
   - The site is plain HTML, CSS, and native ES modules, plus Chart.js loaded from cdnjs as a global `Chart`.
   - The data script uses only Node built-ins (Node 20+).
   - Keep it that way unless the user explicitly asks otherwise.
-- The site has 4 tabs (Contributors, Screens, Open PRs, Milestones), built from two JSON files: the generated `data.json` and the hand-edited `status.json`.
+- The site has 9 tabs (Contributors, This week, Screens, Open PRs, Reviews, Milestones, Code, Trends, and the hidden Profile page), a Ctrl+K search, and is built from three JSON files: the generated `data.json`, the hand-edited `status.json` and the daily `history.json` (from the `data` branch).
 
 ## 2. File organization
 
@@ -27,7 +27,13 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
 ├── aliases.json                 git email/name -> GitHub login, for unlinked commits
 ├── .github/workflows/deploy.yml clone FestivAR -> fetch data -> deploy site/ to Pages
 ├── scripts/
-│   ├── fetch-data.mjs           builds site/data.json (git log + GitHub API). Schema documented at its top
+│   ├── fetch-data.mjs           builds site/data.json: documents its schema at the top, then orchestrates lib/
+│   ├── lib/
+│   │   ├── env.mjs              configuration (env vars) + git helper on the clone
+│   │   ├── people.mjs           identities: git name/email -> GitHub login (resolve)
+│   │   ├── github.mjs           REST (paginated, cached) + GraphQL reviews, open PR details
+│   │   ├── repo.mjs             commits, hotspots, navigation graph (from git and files)
+│   │   └── screens.mjs          screen units from main, open PRs and all branches, with tests
 │   ├── snapshot.mjs             appends today's counts to history.json (data branch); reuses site/js/screens/units.js
 │   └── serve.mjs                local static server (http://localhost:8080)
 └── site/                        everything that gets published
@@ -116,8 +122,8 @@ export default {
 
 ### Key domain concepts
 
-- **People** are keyed by GitHub login everywhere. `resolve()` in `fetch-data.mjs` maps git authors to logins (its comment lists the rules). For duplicates, add an entry to `aliases.json`. Never special-case a person in code.
-- **Unit** = one screen = a `XxxScreen.kt` plus a `XxxViewModel.kt` paired by name, under `ui/<feature>/`. Files that exist only in an open PR are included with `inPR` set, and files that exist only in another branch (from `git diff origin/main...origin/<branch>` on the clone, see `branchChanges()`) with `inBranch` set. `branches` lists every branch touching the unit; the card shows the ones without an open PR as `⎇` pills. `ui/components` and `ui/theme` are skipped (`SKIP_FEATURES`). The unit id is `feature/Key`, which is also its key in `status.json`.
+- **People** are keyed by GitHub login everywhere. `resolve()` in `scripts/lib/people.mjs` maps git authors to logins (its comment lists the rules). For duplicates, add an entry to `aliases.json`. Never special-case a person in code.
+- **Unit** = one screen = a `XxxScreen.kt` plus a `XxxViewModel.kt` paired by name, under `ui/<feature>/`. Files that exist only in an open PR are included with `inPR` set, and files that exist only in another branch (from `git diff origin/main...origin/<branch>` on the clone, see `branchChanges()` in `scripts/lib/screens.mjs`) with `inBranch` set. `branches` lists every branch touching the unit; the card shows the ones without an open PR as `⎇` pills. `ui/components` and `ui/theme` are skipped (`SKIP_FEATURES`). The unit id is `feature/Key`, which is also its key in `status.json`.
 - **Initial author** = the author of the oldest commit of the file on main (`git log --follow`).
 - **Tests** are linked by file name prefix (`CreateTask*Test.kt`): `androidTest/` = UI tests, `test/` = unit tests.
 - **Statuses** (`STATUSES` in `screens/units.js`, in progress order):
@@ -126,7 +132,7 @@ export default {
   - developed = on main
   - tested = UI tests, plus unit tests when there is a ViewModel
   - finalized and frozen are manual only, set in `status.json`. A frozen screen shows a warning if it changes after `since` or an open PR touches it.
-- **Navigation graph**: `navigationGraph()` in `fetch-data.mjs` reads the `AppScreens` enum (nodes) and the `navigate()` / `popBackStack()` calls of `class XNavigator` files (edges). If FestivAR changes this convention, update that function. On the site, columns and rows are ordered by distance from the start screen.
+- **Navigation graph**: `navigationGraph()` in `scripts/lib/repo.mjs` reads the `AppScreens` enum (nodes) and the `navigate()` / `popBackStack()` calls of `class XNavigator` files (edges). If FestivAR changes this convention, update that function. On the site, columns and rows are ordered by distance from the start screen.
 - **Issues of a screen** (`unitIssues`) = open issues whose normalized title contains the screen key, plus the numbers listed in `status.json → screens[id].issues`.
 - **Planned screens** (`plannedUnits`) are derived in the browser, in the Screens tab `setup()`, from open issue titles such as "… the X Screen/ViewModel". One is created only when no unit named X exists yet. When a PR creates the file, the real unit replaces it automatically.
 - **Site modules shared with Node**: `scripts/snapshot.mjs` imports `site/js/core/store.js` and `site/js/screens/units.js`, so the history uses exactly the same status rules as the Screens tab. Keep those two modules (and what they import) free of DOM access at import time: touch `document` only inside functions.
@@ -148,7 +154,7 @@ export default {
 - use `color(login)` so a person has the same color everywhere.
 
 **Add a field to the data**
-1. Compute it in `scripts/fetch-data.mjs`.
+1. Compute it in the right module of `scripts/lib/` (or a new one), and add it to `data` in `scripts/fetch-data.mjs`.
 2. Document it in the schema comment at the top of that file. **This is mandatory.**
 3. Use it from `D` in the site.
 
@@ -156,14 +162,14 @@ Keep keys short (the file is downloaded on every visit), and prefer deriving val
 
 **Add a screen status:** add it to `STATUSES` in `screens/units.js`, add its `--s-<id>` color in `style.css` `:root`, and document it in the README status table.
 
-**Change screen detection** (when FestivAR's folders change): edit `UI_RE` / `SKIP_FEATURES` in `fetch-data.mjs`, re-run it, and check the Screens tab.
+**Change screen detection** (when FestivAR's folders change): edit `UI_RE` / `SKIP_FEATURES` in `scripts/lib/screens.mjs`, re-run the fetch script, and check the Screens tab.
 
-**Track another repo:** set the `REPO` and `FESTIVAR_DIR` environment variables and change the clone URL in `deploy.yml`. Only `SKIP_FEATURES` and the screen naming are FestivAR-specific.
+**Track another repo:** set the `REPO` and `FESTIVAR_DIR` environment variables and change the clone URL in `deploy.yml`. Only the screen naming (`UI_RE`, `SKIP_FEATURES`) and the navigation conventions (`navigationGraph()`) are FestivAR-specific.
 
 ## 5. Code conventions
 
 ### General
-- **Small files.** Aim for under ~200 lines per JS file, and treat 250 as a hard limit: split by responsibility before reaching it (see how `screens/` is split into logic, card and dialog). `style.css` and `fetch-data.mjs` may be longer, but stay organized in commented sections.
+- **Small files.** Aim for under ~200 lines per JS file, and treat 250 as a hard limit: split by responsibility before reaching it (see how `screens/` is split into logic, card and dialog). This applies to `scripts/` too (see how `scripts/lib/` is split). Only `style.css` may be longer, organized in commented sections.
 - **One responsibility per module**, named after what it contains (`card.js`, `units.js`), not `helpers2.js` or `misc.js`.
 - **No duplication.** Before writing a helper, look in `core/utils.js` (generic), `core/store.js` (data-aware) and `core/ui.js` (HTML/charts). If you copy more than ~3 lines, extract a function instead.
 - **No dead code.** No unused imports, exports, functions, variables or CSS classes, no commented-out code, no `console.log` left in the site. Delete code instead of disabling it: git keeps the history.
@@ -191,7 +197,7 @@ Keep keys short (the file is downloaded on every visit), and prefer deriving val
 - No inline `style=""` except for values computed from data (widths, `--c`/`--sc` colors).
 - Mobile: there must be no horizontal page scroll at 375px wide. Only `.kanban` and `.tabs` scroll horizontally, on purpose.
 
-### Data script (`scripts/fetch-data.mjs`)
+### Data scripts (`scripts/`)
 - Only Node built-ins, plus `git` called through `execFileSync`, never through a shell string.
 - **API budget:** the workflow token allows about 1000 requests per hour.
   - Per-item calls (files, reviews, check-runs) are made only for **open** PRs.
@@ -238,7 +244,7 @@ CACHE_DIR=.cache node scripts/fetch-data.mjs                        # writes sit
 node scripts/serve.mjs                                              # http://localhost:8080
 ```
 
-- ES modules don't load from `file://`, so always go through a server.
+- ES modules don't load from `file://`, so always go through a server. `.claude/launch.json` starts `scripts/serve.mjs` for Claude Code's preview.
 - Without `GITHUB_TOKEN`, `hasToken` is false: PR reviews and CI status are null, the kanban shows 2 columns instead of 4, and `prs[].rv` / `size` are missing (GraphQL has no anonymous access), so the Reviews tab only shows cycle time. To check the Reviews UI locally, inject fake `rv`/`size` values into your local `site/data.json` (it is git-ignored), then re-run the fetch script to restore it.
 - On Windows PowerShell, set variables with `$env:CACHE_DIR='.cache'`, or use Git Bash.
 

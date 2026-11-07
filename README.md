@@ -5,12 +5,12 @@ A static dashboard for [SwEnt-FestivAR/FestivAR](https://github.com/SwEnt-Festiv
 **Tabs**
 - **Contributors**: commits, merged PRs, open PRs, issues solved, and lines added/deleted per person, plus weekly activity. You can filter by period, hide bots, and click a person to focus the charts on them.
 - **This week**: what happened in a calendar week (merged PRs, closed issues, new screens, most active people, stale PRs). Use ← → to change week and **Copy as Markdown** to paste a summary in a meeting or on Discord.
-- **Screens**: Screen + ViewModel blocks grouped by feature (`ui/<feature>/`). Each block shows its initial author (the commit that created the file), dates, size, other contributors, tests, the open PRs touching it, and a status. Click **N open issues** on a card to see the open issues about that screen and who is assigned (issues are matched by title; add more with `"issues": [123]` in `status.json`). The **With open issues** filter keeps only those screens. Switch to **Timeline** to see each screen as a Gantt bar, from its first issue (grey) to its file creation and today or its finalized date (colored by status).
+- **Screens**: Screen + ViewModel blocks grouped by feature (`ui/<feature>/`). Each block shows its initial author (the commit that created the file), dates, size, other contributors, tests, the open PRs and other branches (`⎇`) touching it, and a status. Click **N open issues** on a card to see the open issues about that screen and who is assigned (issues are matched by title; add more with `"issues": [123]` in `status.json`). The **With open issues** filter keeps only those screens. Switch to **Timeline** to see each screen as a Gantt bar, from its first issue (grey) to its file creation and today or its finalized date (colored by status).
 - **Open PRs**: a kanban of open PRs (draft / needs review / changes requested / approved), with CI status, stale PRs (> 3 days idle), and the screens each PR touches.
 - **Reviews**: PRs reviewed per person, median wait before the first review, a who-reviews-whom heatmap, weekly PR cycle time (open → merge) and PR sizes (S/M/L/XL). Review data comes from the GraphQL API, so it only appears on the deployed site (or locally with a `GITHUB_TOKEN`).
+- **Milestones**: progress per milestone, open issues per person, unassigned issues, and the issue list for each milestone.
 - **Code**: the app's navigation graph (screens by feature, arrows read from FestivAR's `*Navigator` classes, border = status; hover to highlight, click to open the screen), and hotspots, i.e. the files changed most often × their size. Each one shows its main owner and a "bus factor 1" warning when one person made 80%+ of the changes.
 - **Trends**: curves of open PRs, open and unassigned issues, and screens per status over the semester. Each workflow run saves one snapshot per day in `history.json` on the `data` branch of this repo, so the curves grow day after day.
-- **Milestones**: progress per milestone, open issues per person, unassigned issues, and the issue list for each milestone.
 
 Each person has a **profile page** (the **Profile →** link on their card, or search for them) with an activity calendar, their open PRs, assigned issues and screens.
 
@@ -37,7 +37,7 @@ Manual statuses go in [`status.json`](status.json). On the site, click a status 
 }
 ```
 
-If a frozen screen is modified after `since`, or touched by an open PR, its card shows **⚠ touched while frozen**.
+If a frozen screen is modified after `since`, or touched by an open PR or a branch, its card shows **⚠ touched while frozen**.
 
 ## Deployment
 
@@ -54,6 +54,6 @@ node scripts/fetch-data.mjs
 node scripts/serve.mjs
 ```
 
-Then open http://localhost:8080. Without a `GITHUB_TOKEN`, the GitHub API allows only 60 requests per hour, and the PR tab skips reviews and CI status. Set `CACHE_DIR=.cache` to cache API responses between runs.
+Then open http://localhost:8080. Without a `GITHUB_TOKEN`, the GitHub API allows only 60 requests per hour, the PR tab skips reviews and CI status, and the Reviews tab only shows cycle time. Set `CACHE_DIR=.cache` to cache API responses between runs. The Trends tab stays empty locally, because `history.json` only exists on the deployed site.
 
 `aliases.json` maps git emails or names that are not linked to a GitHub account onto a login, for example `"florian.chatelain@gmail.com": "ShymYoshi"`.
