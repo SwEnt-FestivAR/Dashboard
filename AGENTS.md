@@ -34,6 +34,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
     ├── style.css                all styles, theme tokens on :root
     └── js/
         ├── main.js              entry: load JSON, build nav + sections from the registry, hash routing, theme
+        ├── search.js            global Ctrl+K search palette
         ├── core/                shared, tab-agnostic code
         │   ├── utils.js         generic helpers (DOM, escaping, dates, numbers, sets). Knows nothing about the data
         │   ├── store.js         the loaded data (D, STATUS, NOW) + data-aware helpers (people, links, ago)
@@ -89,9 +90,12 @@ export default {
   label: 'Open PRs',  // nav text
   html: `...`,        // static markup: toolbars, empty containers, <canvas>
   setup() {},         // once at boot: bind controls, fill dropdowns, derive data the tab owns
-  render() {},        // every time the tab is shown: rebuild the dynamic parts from D + local state
+  render(arg) {},     // every time the tab is shown: rebuild the dynamic parts from D + local state
 };
 ```
+
+- **Routes** are `#<tab id>` or `#<tab id>/<argument>`. `main.js` passes the decoded argument to `render(arg)`. For example, the search palette opens `#screens/TaskDetails`, which fills the Screens search box. Use routes to link into a tab: never set another tab's inputs directly.
+- **Global features** that are not tabs live in their own module next to `main.js` and are initialized once from `main.js` after the tabs' `setup()`. Example: `search.js`, the Ctrl+K palette. Its index covers screens, people, PRs and issues; add new kinds of items in `buildIndex()`.
 
 - **Each tab owns its UI state** in a module-level `const state = {…}`, with a comment per field. There is no global UI state.
 - Controls update `state`, then call `render()`.
