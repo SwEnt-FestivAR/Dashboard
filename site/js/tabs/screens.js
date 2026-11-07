@@ -1,14 +1,16 @@
-// Screens tab: status summary, filters, and screen cards grouped by feature.
+// Screens tab: status summary, filters, and screens grouped by feature, as cards or as a timeline.
 
 import { $, $$, esc, plural, seg, toggle, uniq } from '../core/utils.js';
 import { D, statusFileUrl } from '../core/store.js';
 import { avatar, fillPeopleSelect } from '../core/ui.js';
 import { STATUSES, plannedUnits, statusBar, unitAssignees, unitId, unitIssues, unitStatus } from '../screens/units.js';
 import { screenCard } from '../screens/card.js';
+import { timelineHtml } from '../screens/timeline.js';
 import { initStatusDialog, openStatusDialog } from '../screens/status-dialog.js';
 
 const state = {
   route: '',           // last route argument applied ("#screens/<query>"), so a re-render does not reapply it
+  view: 'cards',       // cards | timeline
   feature: 'all',
   expanded: new Set(), // ids of the cards whose issue list is open
 };
@@ -16,6 +18,7 @@ const state = {
 const html = `
   <div class="card status-summary" id="statusSummary"></div>
   <div class="toolbar">
+    <div class="seg" id="screenView"><button data-v="cards" class="on">Cards</button><button data-v="timeline">Timeline</button></div>
     <input id="screenSearch" type="search" placeholder="Search a screen…">
     <select id="screenAuthor"><option value="">All authors</option></select>
     <select id="screenStatus"><option value="">All statuses</option></select>
@@ -37,6 +40,7 @@ function setup() {
   $('#featureFilter').innerHTML = ['all', ...features]
     .map((f) => `<button data-f="${esc(f)}" class="${f === 'all' ? 'on' : ''}">${f === 'all' ? 'All features' : esc(f)}</button>`).join('');
   seg('#featureFilter', 'f', (f) => { state.feature = f; render(); });
+  seg('#screenView', 'v', (v) => { state.view = v; render(); });
   for (const sel of ['#screenSearch', '#screenAuthor', '#screenStatus', '#withIssues']) $(sel).addEventListener('input', () => render());
 }
 
@@ -60,9 +64,10 @@ function render(query = '') {
   state.route = query;
   renderSummary();
   const units = filteredUnits();
-  $('#features').innerHTML = uniq(units.map((u) => u.feature))
-    .map((f) => featureSection(f, units.filter((u) => u.feature === f))).join('')
-    || '<div class="empty">No screen matches these filters</div>';
+  const features = uniq(units.map((u) => u.feature));
+  if (!units.length) $('#features').innerHTML = '<div class="empty">No screen matches these filters</div>';
+  else if (state.view === 'timeline') $('#features').innerHTML = timelineHtml(features.flatMap((f) => units.filter((u) => u.feature === f)));
+  else $('#features').innerHTML = features.map((f) => featureSection(f, units.filter((u) => u.feature === f))).join('');
   for (const b of $$('.status-btn')) b.addEventListener('click', () => openStatusDialog(b.dataset.id));
   for (const b of $$('.issues-btn')) b.addEventListener('click', () => { toggle(state.expanded, b.dataset.id); render(); });
 }

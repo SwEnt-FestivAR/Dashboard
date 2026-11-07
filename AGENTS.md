@@ -42,6 +42,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
         ├── screens/             domain code of the Screens tab
         │   ├── units.js         statuses, linked issues, planned screens (pure logic)
         │   ├── card.js          HTML of one screen card
+        │   ├── timeline.js      Gantt view of the screens (Cards / Timeline toggle)
         │   └── status-dialog.js dialog that builds a status.json entry
         ├── code/
         │   └── nav-graph.js     SVG of the navigation graph (hand-made layout)

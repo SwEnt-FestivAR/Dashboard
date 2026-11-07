@@ -46,15 +46,15 @@ export function unitStatus(u) {
 }
 
 /**
- * Open issues about a screen: issues whose normalized title contains the screen key
- * ("Use DataRepository in Task details" -> taskdetails -> TaskDetails), plus the numbers listed in
+ * Issues about a screen (open ones only, unless `includeClosed`): issues whose normalized title contains the
+ * screen key ("Use DataRepository in Task details" -> taskdetails -> TaskDetails), plus the numbers listed in
  * status.json ("issues": [123]) and, for planned units, the issues they were found in.
  * Only titles are matched: the fetch script does not store issue bodies.
  */
-export function unitIssues(u) {
+export function unitIssues(u, includeClosed = false) {
   const key = norm(u.key);
   const extra = [...(STATUS.screens[unitId(u)]?.issues || []), ...Object.values(u.plannedIssues || {}).flat()];
-  return D.issues.filter((i) => i.s === 'open' && (norm(i.title).includes(key) || extra.includes(i.n)));
+  return D.issues.filter((i) => (includeClosed || i.s === 'open') && (norm(i.title).includes(key) || extra.includes(i.n)));
 }
 
 /** Logins assigned to the open issues of a unit. */
