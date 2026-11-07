@@ -1,7 +1,7 @@
 /* FestivAR dashboard styles. No preprocessor, no framework.
    Colors are tokens on :root, redefined for dark mode (system preference, or the theme button that sets
    <html data-theme>). Always use var(--token) instead of raw colors so both themes keep working.
-   --s-* are the screen status colors referenced by STATUSES in app.js.
+   --s-* are the screen status colors referenced by STATUSES in js/screens/units.js.
    Sections below: layout, controls, KPIs/people, screens, kanban, milestones, dialog, responsive. */
 :root {
   --bg: #f5f6fa; --surface: #ffffff; --surface2: #f0f2f7; --border: #e3e6ee;
@@ -52,6 +52,7 @@ main { max-width: 1320px; margin: 0 auto; padding: 24px; }
 
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); min-width: 0; }
 .card-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.card-head.flush { margin-bottom: 0; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .chart-box { position: relative; height: 320px; }
 .chart-box.tall { height: 360px; }
@@ -120,6 +121,7 @@ a.pill:hover { text-decoration: none; filter: brightness(1.1); }
 .block .author { display: flex; align-items: center; gap: 8px; }
 .block .author b { display: block; font-size: 13px; }
 .block .meta { margin-top: 8px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+.block .also { margin-top: 6px; display: flex; align-items: center; gap: 6px; }
 .block.missing { color: var(--muted); display: flex; align-items: center; justify-content: center; font-style: italic; background: var(--surface2); }
 .unit-foot { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 14px; border-top: 1px solid var(--border); background: var(--surface2); align-items: center; }
 .issues-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
@@ -143,6 +145,7 @@ a.pill:hover { text-decoration: none; filter: brightness(1.1); }
 .ms.on { outline: 2px solid var(--accent); }
 .ms h3 { display: flex; justify-content: space-between; align-items: center; }
 .progress { height: 10px; background: var(--surface2); border-radius: 99px; overflow: hidden; margin: 12px 0 8px; }
+.ms-foot { display: flex; justify-content: space-between; align-items: center; }
 .progress div { height: 100%; background: linear-gradient(90deg, var(--accent), #c084fc); border-radius: 99px; }
 .issue-list { list-style: none; margin: 0; padding: 0; max-height: 420px; overflow: auto; }
 .issue-list li { display: flex; align-items: center; gap: 8px; padding: 8px 4px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }

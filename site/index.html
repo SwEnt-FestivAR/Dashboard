@@ -9,6 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <!-- ES modules: the site must be served over HTTP (scripts/serve.mjs locally), not opened as a file. -->
+  <script type="module" src="js/main.js"></script>
 </head>
 <body>
   <header class="topbar">
@@ -19,127 +21,16 @@
         <a id="repoLink" class="muted small" target="_blank" rel="noopener"></a>
       </div>
     </div>
-    <nav class="tabs" id="tabs">
-      <a href="#contributors" data-tab="contributors">Contributors</a>
-      <a href="#screens" data-tab="screens">Screens</a>
-      <a href="#prs" data-tab="prs">Open PRs</a>
-      <a href="#milestones" data-tab="milestones">Milestones</a>
-    </nav>
+    <nav class="tabs" id="tabs"></nav>
     <div class="topbar-right">
       <span id="updated" class="muted small"></span>
       <button id="themeBtn" class="icon-btn" title="Toggle theme">◐</button>
     </div>
   </header>
 
-  <main>
+  <!-- Filled by js/main.js with one <section> per tab of js/tabs/index.js -->
+  <main id="main">
     <div id="loading" class="loading">Loading data…</div>
-
-    <!-- CONTRIBUTORS -->
-    <section id="tab-contributors" class="tab" hidden>
-      <div class="toolbar">
-        <div class="seg" id="period">
-          <button data-days="0" class="on">All time</button>
-          <button data-days="90">90 days</button>
-          <button data-days="30">30 days</button>
-          <button data-days="14">14 days</button>
-          <button data-days="7">7 days</button>
-        </div>
-        <label class="check"><input type="checkbox" id="hideBots" checked> Hide bots</label>
-      </div>
-      <div class="kpis" id="kpis"></div>
-      <div class="people" id="peopleCards"></div>
-      <div class="grid2">
-        <div class="card">
-          <div class="card-head">
-            <h3>Per contributor</h3>
-            <div class="seg small" id="metric">
-              <button data-m="commits" class="on">Commits</button>
-              <button data-m="merged">PRs merged</button>
-              <button data-m="open">PRs open</button>
-              <button data-m="issues">Issues solved</button>
-            </div>
-          </div>
-          <div class="chart-box"><canvas id="barChart"></canvas></div>
-        </div>
-        <div class="card">
-          <div class="card-head"><h3>Lines added / deleted</h3><span class="muted small">merge commits excluded</span></div>
-          <div class="chart-box"><canvas id="locChart"></canvas></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-head">
-          <h3>Activity over time</h3>
-          <div class="seg small" id="timeMetric">
-            <button data-m="commits" class="on">Commits / week</button>
-            <button data-m="merged">PRs merged / week</button>
-          </div>
-        </div>
-        <div class="chart-box tall"><canvas id="timeChart"></canvas></div>
-      </div>
-    </section>
-
-    <!-- SCREENS -->
-    <section id="tab-screens" class="tab" hidden>
-      <div class="card status-summary" id="statusSummary"></div>
-      <div class="toolbar">
-        <input id="screenSearch" type="search" placeholder="Search a screen…">
-        <select id="screenAuthor"><option value="">All authors</option></select>
-        <select id="screenStatus"><option value="">All statuses</option></select>
-        <label class="check"><input type="checkbox" id="withIssues"> With open issues</label>
-        <div class="seg small" id="featureFilter"></div>
-      </div>
-      <div id="features"></div>
-    </section>
-
-    <!-- OPEN PRS -->
-    <section id="tab-prs" class="tab" hidden>
-      <div class="kpis" id="prKpis"></div>
-      <div class="toolbar">
-        <select id="prAuthor"><option value="">All authors</option></select>
-        <label class="check"><input type="checkbox" id="staleOnly"> Stale only (&gt; 3 days without activity)</label>
-      </div>
-      <div class="kanban" id="kanban"></div>
-    </section>
-
-    <!-- MILESTONES -->
-    <section id="tab-milestones" class="tab" hidden>
-      <div class="milestones" id="milestoneCards"></div>
-      <div class="grid2">
-        <div class="card">
-          <div class="card-head"><h3>Open issues per person</h3><span class="muted small">current load</span></div>
-          <div class="chart-box"><canvas id="loadChart"></canvas></div>
-        </div>
-        <div class="card">
-          <div class="card-head"><h3>Unassigned open issues</h3><span id="unassignedCount" class="pill"></span></div>
-          <ul class="issue-list" id="unassigned"></ul>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-head"><h3 id="msIssuesTitle">Issues</h3>
-          <div class="seg small" id="msIssueState">
-            <button data-s="open" class="on">Open</button><button data-s="closed">Closed</button>
-          </div>
-        </div>
-        <ul class="issue-list" id="msIssues"></ul>
-      </div>
-    </section>
   </main>
-
-  <dialog id="statusDialog">
-    <form method="dialog">
-      <h3>Change status of <span id="dlgName"></span></h3>
-      <p class="muted small">Statuses are shared through <code>status.json</code> in the General-information repo. Pick a status, copy the entry and paste it into the file; the site updates after the next deploy.</p>
-      <div class="seg" id="dlgStatuses"></div>
-      <label class="small">Note (optional)<input id="dlgNote" type="text" placeholder="e.g. waiting for design review"></label>
-      <pre id="dlgJson"></pre>
-      <div class="dlg-actions">
-        <button type="button" id="dlgCopy">Copy entry</button>
-        <a id="dlgEdit" class="btn primary" target="_blank" rel="noopener">Edit status.json on GitHub ↗</a>
-        <button value="close" class="ghost">Close</button>
-      </div>
-    </form>
-  </dialog>
-
-  <script src="app.js"></script>
 </body>
 </html>
