@@ -26,9 +26,11 @@
 //                       ci: "success"|"failure"|"pending"|"none"|null, labels, files: [{f, s, add, del}], screens: ["feature/Key"] }]
 //   milestones       [{ title, state, due, open, closed, url, description }]
 //   units            one entry per screen, i.e. a Screen/ViewModel pair:
-//                    { feature, key, screen: FileInfo|null, viewModel: FileInfo|null, openPRs: [n], tests: { ui: [name], unit: [name] } }
+//                    { feature, key, screen: FileInfo|null, viewModel: FileInfo|null, openPRs: [n], branches: [branch names touching it],
+//                      tests: { ui: [name], unit: [name] } }
 //   FileInfo         on main:     { path, lines, todos, author, created: unix, lastModified: unix, lastAuthor, commits, contributors: [{login, n}] }
 //                    only in a PR: { path, inPR: n, author, created: unix, lines, contributors }
+//                    only in a branch (no open PR): { path, inBranch: name, author, created: unix, lines, contributors }
 //   navigation       { screens: [route names, AppScreens enum order], edges: [{ from, to, kind: "go"|"back" }] }
 //                    (see navigationGraph() for how it is read)
 //   hotspots         top HOTSPOTS Kotlin files of app/src by commits × lines, most first:
@@ -57,7 +59,7 @@ const SKIP_FEATURES = new Set(['components', 'theme']);
 const ALIASES = fs.existsSync('aliases.json') ? JSON.parse(fs.readFileSync('aliases.json', 'utf8')) : {};
 
 /** Runs a git command inside the FestivAR clone and returns stdout. */
-const git = (...args) => execFileSync('git', ['-C', SRC, ...args], { encoding: 'utf8', maxBuffer: 1 << 28 });
+const git = (...args) => execFileSync('git', ['-C', SRC, ...args], { encoding: 'utf8', maxBuffer: 1 << 28, stdio: ['ignore', 'pipe', 'pipe'] });
 
 // ---------- GitHub API ----------
 let apiCalls = 0;
@@ -202,6 +204,28 @@ function navigationGraph(allFiles) {
   return { screens, edges: [...edges.values()] };
 }
 
+/**
+ * Files added or modified in each remote branch compared to the default branch (since their merge base),
+ * read from the clone, so no API call. Deleted files are ignored; renamed files count under their new name.
+ * Returns [{ branch, file }].
+ */
+function branchChanges(defaultBranch) {
+  const refs = git('for-each-ref', '--format=%(refname:short)', 'refs/remotes/origin').split('\n')
+    .filter((r) => r.startsWith('origin/') && r !== 'origin/HEAD' && r !== `origin/${defaultBranch}`);
+  return refs.flatMap((ref) => git('diff', '--name-status', `origin/${defaultBranch}...${ref}`)
+    .split('\n').filter(Boolean).map((line) => line.split('\t'))
+    .filter(([status]) => status[0] !== 'D')
+    .map(([, file, renamedTo]) => ({ branch: ref.slice('origin/'.length), file: renamedTo || file })));
+}
+
+/** FileInfo of a file that only exists in a branch: author and date of the commit that added it there. */
+function branchFileInfo(branch, file) {
+  const [sha, name, email, at] = git('log', '-1', '--diff-filter=A', '--format=%H%x1f%an%x1f%ae%x1f%at', `origin/${branch}`, '--', file).trim().split('\x1f');
+  const author = resolve(name, email, sha, {});
+  const lines = git('show', `origin/${branch}:${file}`).split('\n').length;
+  return { path: file, inBranch: branch, author, created: Number(at), lines, contributors: [{ login: author, n: 1 }] };
+}
+
 async function main() {
   console.log(`Repo ${REPO}, clone ${SRC}, token: ${TOKEN ? 'yes' : 'no'}`);
   const defaultBranch = git('rev-parse', '--abbrev-ref', 'HEAD').trim();
@@ -287,7 +311,7 @@ async function main() {
   const allFiles = git('ls-files').split('\n').filter(Boolean);
   const testFiles = allFiles.filter((f) => /\/(test|androidTest)\/.*\/ui\/.*Test\.kt$/.test(f));
   const units = {}; // feature/key -> unit
-  const unitFor = (feature, key) => (units[`${feature}/${key}`] ||= { feature, key, screen: null, viewModel: null, openPRs: [] });
+  const unitFor = (feature, key) => (units[`${feature}/${key}`] ||= { feature, key, screen: null, viewModel: null, openPRs: [], branches: [] });
 
   /** History of one file on main (--follow tracks renames). The oldest commit gives the initial author. */
   function fileInfo(file) {
@@ -321,6 +345,16 @@ async function main() {
       if (!u.openPRs.includes(pr.n)) u.openPRs.push(pr.n);
       if (!pr.screens.includes(`${m[1]}/${m[2]}`)) pr.screens.push(`${m[1]}/${m[2]}`);
     }
+  }
+  // Files in other branches (with or without a PR): a file missing from main becomes a branch-only file
+  // (the unit is then "in development"), and every branch touching a screen is listed on it.
+  for (const { branch, file } of branchChanges(defaultBranch)) {
+    const m = UI_RE.exec(file);
+    if (!m || SKIP_FEATURES.has(m[1])) continue;
+    const u = unitFor(m[1], m[2]);
+    const slot = m[3] === 'Screen' ? 'screen' : 'viewModel';
+    u[slot] ||= branchFileInfo(branch, file);
+    if (!u.branches.includes(branch)) u.branches.push(branch);
   }
   // Tests are matched by file name prefix: CreateTaskScreenTest, CreateTaskViewModelTest... all belong to "CreateTask".
   // androidTest/ = UI tests, test/ = unit tests.
