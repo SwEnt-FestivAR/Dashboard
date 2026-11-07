@@ -36,8 +36,9 @@
 //                    only in a branch (no open PR): { path, inBranch: name, author, created: unix, lines, contributors }
 //   navigation       { screens: [route names, AppScreens enum order], edges: [{ from, to, kind: "go"|"back" }] }
 //                    (see navigationGraph() in lib/repo.mjs for how it is read)
-//   hotspots         top 40 Kotlin files of app/src by commits × lines, most first:
-//                    [{ f: path, n: commits touching it (merges excluded), lines, authors: [{login, n}] (most first) }]
+//   hotspots         top 40 Kotlin files of app/src by score = heat × log2(1 + complexity), most first (see hotspots() in lib/repo.mjs):
+//                    [{ f: path, n: commits touching it (merges excluded), heat: recent activity, complexity: indentation-based,
+//                       lines, last: unix of its last change, score, authors: [{login, n}] (most first) }]
 //
 // How screens are found (lib/screens.mjs): any file matching UI_RE, i.e. app/src/main/java/**/ui/<feature>/**/<Key>(Screen|ViewModel).kt.
 // <feature> is the first folder after ui/, <Key> is the shared prefix that pairs a Screen with its ViewModel
