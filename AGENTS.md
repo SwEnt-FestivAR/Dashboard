@@ -52,7 +52,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
         │   ├── timeline.js      Gantt view of the screens (Cards / Timeline toggle)
         │   └── status-dialog.js dialog that builds a status.json entry
         ├── reviews/
-        │   └── stats.js         review / cycle time / PR size statistics (pure logic)
+        │   └── stats.js         review / cycle time / PR size statistics, peer approvals (pure logic)
         ├── code/
         │   └── nav-graph.js     SVG of the navigation graph (hand-made layout)
         └── tabs/                one module per tab
@@ -137,7 +137,7 @@ export default {
 - **Issues of a screen** (`unitIssues`) = open issues whose normalized title contains the screen key, plus the numbers listed in `status.json → screens[id].issues`.
 - **Planned screens** (`plannedUnits`) are derived in the browser, in the Screens tab `setup()`, from open issue titles such as "… the X Screen/ViewModel". One is created only when no unit named X exists yet. When a PR creates the file, the real unit replaces it automatically.
 - **Site modules shared with Node**: `scripts/snapshot.mjs` imports `site/js/core/store.js` and `site/js/screens/units.js`, so the history uses exactly the same status rules as the Screens tab. Keep those two modules (and what they import) free of DOM access at import time: touch `document` only inside functions.
-- **Weeks** run from **Friday 12:00 to the next Friday 12:00**, in the viewer's local time (`WEEK_START` in `core/utils.js`). Always group by week with `weekStart(t)` and move between weeks with `addWeeks(t, n)` (never `± 7 * DAY`, which drifts by an hour at daylight-saving changes). The This week tab, weekly charts, cycle time and the profile calendar all follow this.
+- **Weeks** run from **Friday 12:00 to the next Friday 12:00**, in the viewer's local time (`WEEK_START` in `core/utils.js`). Always group by week with `weekStart(t)` and move between weeks with `addWeeks(t, n)` (never `± 7 * DAY`, which drifts by an hour at daylight-saving changes). The This week tab, the "Approved this week" kanban column, weekly charts, cycle time and the profile calendar all follow this.
 - **"Now"** is `NOW` = `data.generatedAt`, never `Date.now()`. Ages and periods are relative to the last data refresh. (Exception: the `since` date written by the status dialog is today's date.)
 
 ## 4. Recipes

@@ -1,9 +1,11 @@
-// Open PRs tab: KPIs and a kanban of open PRs. The review columns need review data, which only exists
-// when the fetch script ran with a GITHUB_TOKEN (D.hasToken).
+// Open PRs tab: KPIs and a kanban of open PRs. The last column holds the PRs approved during the current
+// week (Friday 12:00 → Friday 12:00), merged ones included; older approvals go back to "Needs review".
+// The review columns need review data, which only exists when the fetch had a token (D.hasToken).
 
-import { $, DAY, esc, fmtNum, ts, uniq } from '../core/utils.js';
+import { $, DAY, addWeeks, esc, fmtNum, fmtWeekDay, ts, uniq, weekStart } from '../core/utils.js';
 import { D, NOW, ago, nameOf, repoUrl } from '../core/store.js';
 import { avatar, avatars, extLink, fillPeopleSelect, kpis } from '../core/ui.js';
+import { approvalTimes, approvers } from '../reviews/stats.js';
 
 const STALE_DAYS = 3;
 
@@ -15,48 +17,76 @@ const html = `
   </div>
   <div class="kanban" id="kanban"></div>`;
 
-/** Kanban columns: [title, predicate]. */
+/** Columns for the open PRs that were not approved this week: [title, predicate]. */
 const columns = () => (D.hasToken
   ? [
     ['Draft', (p) => p.d],
-    ['Needs review', (p) => !p.d && !['approved', 'changes'].includes(p.review)],
+    ['Needs review', (p) => !p.d && p.review !== 'changes'],
     ['Changes requested', (p) => !p.d && p.review === 'changes'],
-    ['Approved', (p) => !p.d && p.review === 'approved'],
   ]
   : [['Draft', (p) => p.d], ['Ready for review', (p) => !p.d]]);
 
 const isStale = (p) => NOW - ts(p.u) > STALE_DAYS * DAY;
 
+/** PRs (open or merged) with a peer approval during the current week, latest approval first, with `approvedAt`. */
+function approvedThisWeek() {
+  const from = weekStart(NOW), to = addWeeks(from, 1);
+  return D.prs
+    .filter((p) => p.s === 'open' || p.m)
+    .map((p) => ({ ...p, approvedAt: Math.max(0, ...approvalTimes(p).filter((t) => t >= from && t < to)) }))
+    .filter((p) => p.approvedAt)
+    .sort((a, b) => b.approvedAt - a.approvedAt);
+}
+
+const column = (title, cards, sub = '') => `<div class="col">
+  <div class="col-head"><span>${title}${sub ? `<br><span class="muted small">${sub}</span>` : ''}</span><span class="pill">${cards.length}</span></div>
+  ${cards.join('') || '<div class="empty small">Nothing here</div>'}</div>`;
+
 function setup() {
   fillPeopleSelect('#prAuthor', uniq(D.openPRs.map((p) => p.a)).sort());
-  for (const sel of ['#prAuthor', '#staleOnly']) $(sel).addEventListener('input', render);
+  for (const sel of ['#prAuthor', '#staleOnly']) $(sel).addEventListener('input', () => render());
 }
 
 function render() {
   const all = D.openPRs;
+  const approved = D.hasToken ? approvedThisWeek() : [];
   const avgAgeDays = all.length ? all.reduce((t, p) => t + (NOW - ts(p.c)), 0) / all.length / DAY : 0;
   $('#prKpis').innerHTML = kpis([
     ['Open PRs', all.length],
     ['Drafts', all.filter((p) => p.d).length],
     ['Ready for review', all.filter((p) => !p.d).length],
     [`Stale (> ${STALE_DAYS} days)`, all.filter(isStale).length],
+    ...(D.hasToken ? [['Approved this week', approved.length]] : []),
     ['Average age', `${avgAgeDays.toFixed(1)} d`],
   ]);
 
   const author = $('#prAuthor').value, staleOnly = $('#staleOnly').checked;
-  const prs = all.filter((p) => (!author || p.a === author) && (!staleOnly || isStale(p)));
-  const cols = columns();
+  const keep = (p) => (!author || p.a === author) && (!staleOnly || (p.s === 'open' && isStale(p)));
+  const approvedNumbers = new Set(approved.map((p) => p.n));
+  const open = all.filter((p) => keep(p) && !approvedNumbers.has(p.n));
+  const cols = columns().map(([title, inColumn]) =>
+    column(title, open.filter(inColumn).sort((a, b) => ts(a.u) - ts(b.u)).map((p) => prCard(p)))); // least recently updated first
+  if (D.hasToken) cols.push(column('Approved this week', approved.filter(keep).map(approvedCard), `since ${fmtWeekDay(weekStart(NOW))}`));
   $('#kanban').style.gridTemplateColumns = `repeat(${cols.length}, minmax(240px, 1fr))`;
-  $('#kanban').innerHTML = cols.map(([title, keep]) => {
-    const list = prs.filter(keep).sort((a, b) => ts(a.u) - ts(b.u)); // least recently updated first
-    return `<div class="col"><div class="col-head">${title}<span class="pill">${list.length}</span></div>
-      ${list.map(prCard).join('') || '<div class="empty small">Nothing here</div>'}</div>`;
-  }).join('');
+  $('#kanban').innerHTML = cols.join('');
 }
 
 const CI_PILLS = { success: '<span class="pill ok">CI ✓</span>', failure: '<span class="pill bad">CI ✗</span>', pending: '<span class="pill warn">CI …</span>' };
 
-function prCard(p) {
+/** Card of a PR approved this week: the full open-PR card, or a short card once merged. */
+function approvedCard(p) {
+  const approval = `<div class="row">Approved ${ago(p.approvedAt)} by ${avatars(approvers(p))}</div>`;
+  const openPR = D.openPRs.find((o) => o.n === p.n);
+  if (openPR) return prCard(openPR, approval);
+  return `<div class="pr">
+    ${extLink(repoUrl(`/pull/${p.n}`), `<span class="muted">#${p.n}</span> ${esc(p.title)}`, 't')}
+    <div class="row">${avatar(p.a, 'xs')} ${nameOf(p.a)} · <span class="pill ok">merged ${ago(ts(p.m))}</span></div>
+    ${approval}
+  </div>`;
+}
+
+/** Card of an open PR; `extra` is appended HTML (e.g. the approval row). */
+function prCard(p, extra = '') {
   const stale = isStale(p);
   const add = p.files.reduce((t, f) => t + f.add, 0), del = p.files.reduce((t, f) => t + f.del, 0);
   const activity = stale ? `<span class="pill warn">⏰ idle ${ago(ts(p.u)).replace(' ago', '')}</span>` : `<span>updated ${ago(ts(p.u))}</span>`;
@@ -67,6 +97,7 @@ function prCard(p) {
       <span><span class="plus">+${fmtNum(add)}</span> <span class="minus">−${fmtNum(del)}</span> · ${p.files.length} files</span></div>
     ${p.reviewers.length ? `<div class="row">Review requested: ${avatars(p.reviewers)}</div>` : ''}
     ${p.screens?.length ? `<div class="row">${p.screens.map((s) => `<a class="pill" href="#screens">${esc(s.split('/')[1])}</a>`).join('')}</div>` : ''}
+    ${extra}
   </div>`;
 }
 

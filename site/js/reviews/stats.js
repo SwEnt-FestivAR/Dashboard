@@ -18,6 +18,12 @@ function peerReviews(pr) {
     .sort((a, b) => a.t - b.t);
 }
 
+/** Times (unix) of the peer approvals of a PR, oldest first. Empty without review data. */
+export const approvalTimes = (pr) => peerReviews(pr).filter((r) => r.state === 'A').map((r) => r.t);
+
+/** Logins of the people who approved a PR. */
+export const approvers = (pr) => [...new Set(peerReviews(pr).filter((r) => r.state === 'A').map((r) => r.login))];
+
 /** Seconds from opening a PR to its first peer review (null when never reviewed). */
 const firstReviewWait = (pr) => {
   const first = peerReviews(pr)[0];
