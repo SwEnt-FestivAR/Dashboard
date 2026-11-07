@@ -1,4 +1,5 @@
-# Builds site/data.json from FestivAR (read-only) and publishes site/ to GitHub Pages.
+# Builds site/data.json from FestivAR (read-only), adds today's snapshot to the history kept on the
+# `data` branch of this repo, and publishes site/ to GitHub Pages.
 # Requires Settings -> Pages -> Source = "GitHub Actions" on this repo.
 name: Build & deploy dashboard
 
@@ -10,13 +11,13 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write # push the daily snapshot to the `data` branch
   pages: write
   id-token: write
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false # never stop a run in the middle of saving the history
 
 jobs:
   build:
@@ -29,7 +30,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Collect data
         env:
@@ -39,6 +40,30 @@ jobs:
 
       - name: Add status.json
         run: cp status.json site/status.json
+
+      - name: Open the history (data branch, created on the first run)
+        run: |
+          if git ls-remote --exit-code --heads origin data > /dev/null; then
+            git fetch --depth=1 origin data
+            git worktree add history FETCH_HEAD
+          else
+            git worktree add --detach history
+            git -C history checkout --orphan data
+            git -C history rm -rf --quiet .
+          fi
+
+      - name: Add today's snapshot
+        run: |
+          node scripts/snapshot.mjs history/history.json site/data.json status.json
+          cp history/history.json site/history.json
+
+      - name: Save the history
+        working-directory: history
+        run: |
+          git add history.json
+          git -c user.name="github-actions[bot]" -c user.email="41898283+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "Snapshot $(date -u +%F)" || exit 0  # nothing changed since the last run today
+          git push origin HEAD:data
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
