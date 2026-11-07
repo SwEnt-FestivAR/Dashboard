@@ -2,6 +2,7 @@
 
 Guide for AI coding agents (Claude Code, Codex, Copilot, Cursor…) and for the humans driving them.
 **Read all of it before changing anything.** The user-facing documentation is in [README.md](README.md). `CLAUDE.md` only imports this file.
+**Planned work lives in [ROADMAP.md](ROADMAP.md)**: it lists the validated features and the design choices already made. Follow those choices, and tick a feature when it ships.
 
 ---
 
@@ -44,6 +45,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
         └── tabs/                one module per tab
             ├── index.js         THE TAB REGISTRY (order = nav order)
             ├── contributors.js
+            ├── week.js
             ├── screens.js
             ├── prs.js
             └── milestones.js
