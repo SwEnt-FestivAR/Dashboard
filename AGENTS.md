@@ -28,6 +28,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
 ├── .github/workflows/deploy.yml clone FestivAR -> fetch data -> deploy site/ to Pages
 ├── scripts/
 │   ├── fetch-data.mjs           builds site/data.json (git log + GitHub API). Schema documented at its top
+│   ├── snapshot.mjs             appends today's counts to history.json (data branch); reuses site/js/screens/units.js
 │   └── serve.mjs                local static server (http://localhost:8080)
 └── site/                        everything that gets published
     ├── index.html               shell only: top bar, empty <nav>, empty <main>, script tags
@@ -57,10 +58,13 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
             ├── reviews.js       review stats, who-reviews-whom matrix, cycle time, PR sizes
             ├── milestones.js
             ├── code.js          navigation graph + hotspots (data.navigation, data.hotspots)
+            ├── trends.js        curves from history.json (loaded on first display)
             └── person.js        profile page, hidden from the nav, route #person/<login>
 ```
 
-Generated, git-ignored, **never committed**: `site/data.json`, `site/status.json` (copied at deploy time), `festivar/` (the clone) and `.cache/`.
+Generated, git-ignored, **never committed**: `site/data.json`, `site/status.json` (copied at deploy time), `site/history.json` (copied from the `data` branch at deploy time), `festivar/` (the clone) and `.cache/`.
+
+**The `data` branch** is an orphan branch holding only `history.json`, one small snapshot per day. Only the workflow writes it (`scripts/snapshot.mjs`, then a commit by `github-actions[bot]`). Never merge it into `main`, and never edit it by hand except to fix a corrupted entry. If you add a field to the snapshot, the site must still handle older entries that lack it.
 
 ### Dependency direction
 
@@ -125,6 +129,7 @@ export default {
 - **Navigation graph**: `navigationGraph()` in `fetch-data.mjs` reads the `AppScreens` enum (nodes) and the `navigate()` / `popBackStack()` calls of `class XNavigator` files (edges). If FestivAR changes this convention, update that function. On the site, columns and rows are ordered by distance from the start screen.
 - **Issues of a screen** (`unitIssues`) = open issues whose normalized title contains the screen key, plus the numbers listed in `status.json → screens[id].issues`.
 - **Planned screens** (`plannedUnits`) are derived in the browser, in the Screens tab `setup()`, from open issue titles such as "… the X Screen/ViewModel". One is created only when no unit named X exists yet. When a PR creates the file, the real unit replaces it automatically.
+- **Site modules shared with Node**: `scripts/snapshot.mjs` imports `site/js/core/store.js` and `site/js/screens/units.js`, so the history uses exactly the same status rules as the Screens tab. Keep those two modules (and what they import) free of DOM access at import time: touch `document` only inside functions.
 - **"Now"** is `NOW` = `data.generatedAt`, never `Date.now()`. Ages and periods are relative to the last data refresh. (Exception: the `since` date written by the status dialog is today's date.)
 
 ## 4. Recipes

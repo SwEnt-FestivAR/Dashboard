@@ -19,7 +19,7 @@ Features validated by the team, with the design choices already made. Implement 
 - [x] **Code tab, navigation graph:** **hand-made SVG**, no library. Screens are laid out in columns by feature, arrows come from FestivAR's navigation code (routes in `navigation/`), the color shows the status, and clicking opens the screen card. The edges are extracted in `fetch-data.mjs`.
 - [x] **Code tab, hotspots:** files ranked by number of changes × size (from `git log --numstat`), with their main owner and bus factor. These are refactoring candidates.
 - [x] **Global search (Ctrl+K):** a command palette over screens, PRs, issues and people, available on every tab.
-- [ ] **History and trends:** curves of open PRs, open issues and screens per status over the semester, from the `data` branch snapshots (see above).
+- [x] **History and trends:** curves of open PRs, open issues and screens per status over the semester, from the `data` branch snapshots (see above).
 
 ## Considered and not selected (for now)
 

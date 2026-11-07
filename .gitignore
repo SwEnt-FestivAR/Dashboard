@@ -2,3 +2,4 @@ festivar/
 site/data.json
 site/status.json
 .cache/
+site/history.json

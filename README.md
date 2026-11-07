@@ -9,6 +9,7 @@ A static dashboard for [SwEnt-FestivAR/FestivAR](https://github.com/SwEnt-Festiv
 - **Open PRs**: a kanban of open PRs (draft / needs review / changes requested / approved), with CI status, stale PRs (> 3 days idle), and the screens each PR touches.
 - **Reviews**: PRs reviewed per person, median wait before the first review, a who-reviews-whom heatmap, weekly PR cycle time (open → merge) and PR sizes (S/M/L/XL). Review data comes from the GraphQL API, so it only appears on the deployed site (or locally with a `GITHUB_TOKEN`).
 - **Code**: the app's navigation graph (screens by feature, arrows read from FestivAR's `*Navigator` classes, border = status; hover to highlight, click to open the screen), and hotspots, i.e. the files changed most often × their size. Each one shows its main owner and a "bus factor 1" warning when one person made 80%+ of the changes.
+- **Trends**: curves of open PRs, open and unassigned issues, and screens per status over the semester. Each workflow run saves one snapshot per day in `history.json` on the `data` branch of this repo, so the curves grow day after day.
 - **Milestones**: progress per milestone, open issues per person, unassigned issues, and the issue list for each milestone.
 
 Each person has a **profile page** (the **Profile →** link on their card, or search for them) with an activity calendar, their open PRs, assigned issues and screens.
@@ -42,7 +43,8 @@ If a frozen screen is modified after `since`, or touched by an open PR, its card
 
 1. Push this repo to GitHub.
 2. Go to **Settings → Pages → Build and deployment → Source** and choose **GitHub Actions**.
-3. The workflow `.github/workflows/deploy.yml` runs on every push to `main`, every day at 05:00 UTC, and on demand (**Actions → Build & deploy dashboard → Run workflow**).
+3. The workflow needs to push the daily snapshot to the `data` branch. It asks for `contents: write`; if the organization restricts that, allow it in **Settings → Actions → General → Workflow permissions** ("Read and write permissions").
+4. The workflow `.github/workflows/deploy.yml` runs on every push to `main`, every day at 05:00 UTC, and on demand (**Actions → Build & deploy dashboard → Run workflow**).
 
 ## Local preview
 

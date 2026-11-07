@@ -19,6 +19,7 @@ import prs from './prs.js';
 import reviews from './reviews.js';
 import milestones from './milestones.js';
 import code from './code.js';
+import trends from './trends.js';
 import person from './person.js';
 
-export const TABS = [contributors, week, screens, prs, reviews, milestones, code, person];
+export const TABS = [contributors, week, screens, prs, reviews, milestones, code, trends, person];
