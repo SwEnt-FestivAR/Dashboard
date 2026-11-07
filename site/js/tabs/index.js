@@ -7,7 +7,8 @@
 //     html    static markup of the section (toolbars, empty containers, canvases)
 //     setup() called once at boot, after the data is loaded and the html is in the page: bind controls,
 //             fill dropdowns
-//     render() called each time the tab is shown or the theme changes; rebuilds the dynamic parts
+//     render(arg) called each time the tab is shown or the theme changes; rebuilds the dynamic parts.
+//             `arg` is the optional route argument: "#screens/TaskDetails" -> render('TaskDetails')
 // To add a tab, create js/tabs/<name>.js with that shape and add it to this list.
 
 import contributors from './contributors.js';

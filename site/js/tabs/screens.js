@@ -8,6 +8,7 @@ import { screenCard } from '../screens/card.js';
 import { initStatusDialog, openStatusDialog } from '../screens/status-dialog.js';
 
 const state = {
+  route: '',           // last route argument applied ("#screens/<query>"), so a re-render does not reapply it
   feature: 'all',
   expanded: new Set(), // ids of the cards whose issue list is open
 };
@@ -36,7 +37,7 @@ function setup() {
   $('#featureFilter').innerHTML = ['all', ...features]
     .map((f) => `<button data-f="${esc(f)}" class="${f === 'all' ? 'on' : ''}">${f === 'all' ? 'All features' : esc(f)}</button>`).join('');
   seg('#featureFilter', 'f', (f) => { state.feature = f; render(); });
-  for (const sel of ['#screenSearch', '#screenAuthor', '#screenStatus', '#withIssues']) $(sel).addEventListener('input', render);
+  for (const sel of ['#screenSearch', '#screenAuthor', '#screenStatus', '#withIssues']) $(sel).addEventListener('input', () => render());
 }
 
 /** Units matching the toolbar filters. An author matches as initial author, or as assignee of a planned screen. */
@@ -53,7 +54,10 @@ function filteredUnits() {
     && (!withIssues || unitIssues(u).length > 0));
 }
 
-function render() {
+/** `query` comes from the route "#screens/<query>" (used by the search palette) and fills the search box. */
+function render(query = '') {
+  if (query && query !== state.route) $('#screenSearch').value = query;
+  state.route = query;
   renderSummary();
   const units = filteredUnits();
   $('#features').innerHTML = uniq(units.map((u) => u.feature))

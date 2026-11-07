@@ -4,6 +4,7 @@
 import { $, $$, esc } from './core/utils.js';
 import { D, initStore, repoUrl } from './core/store.js';
 import { TABS } from './tabs/index.js';
+import { initSearch } from './search.js';
 
 async function loadJson(path) {
   const res = await fetch(path, { cache: 'no-cache' });
@@ -26,16 +27,18 @@ function initTheme() {
   });
 }
 
-function currentTab() {
-  return TABS.find((t) => t.id === location.hash.slice(1)) || TABS[0];
+/** Route from the hash "#<tab id>/<argument>": the argument is optional and passed to render(). */
+function route() {
+  const [id, ...rest] = location.hash.slice(1).split('/');
+  return { tab: TABS.find((t) => t.id === id) || TABS[0], arg: decodeURIComponent(rest.join('/')) };
 }
 
 /** Shows the section of the tab in the URL hash and renders it. */
 function showTab() {
-  const tab = currentTab();
+  const { tab, arg } = route();
   for (const s of $$('.tab')) s.hidden = s.id !== `tab-${tab.id}`;
   for (const a of $$('#tabs a')) a.classList.toggle('on', a.dataset.tab === tab.id);
-  tab.render();
+  tab.render(arg);
 }
 
 async function boot() {
@@ -58,6 +61,7 @@ async function boot() {
 
   Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
   for (const t of TABS) t.setup();
+  initSearch(); // after setup(): the Screens tab adds the planned screens to D.units
   window.addEventListener('hashchange', () => { scrollTo(0, 0); showTab(); });
   showTab();
 }
