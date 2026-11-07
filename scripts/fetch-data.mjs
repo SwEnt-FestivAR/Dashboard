@@ -18,7 +18,9 @@
 //   hasToken         false = openPRs[].review and .ci are null
 //   people           { login: { login, name, avatar, bot } }
 //   commits          [[unix, login, linesAdded, linesDeleted], ...]  (merge commits excluded)
-//   prs              [{ n, title, a, s: "open"|"closed", d: draft, c: created, m: merged, cl: closed, u: updated }]
+//   prs              [{ n, title, a, s: "open"|"closed", d: draft, c: created, m: merged, cl: closed, u: updated,
+//                       size: lines added + deleted, rv: [[reviewer login, "A"pproved|"C"hanges requested|"R" commented|"D"ismissed, unix]] }]
+//                    size and rv only exist when hasToken (they come from GraphQL, see prReviews())
 //   issues           [{ n, title, s, r: state_reason, c, cl, a: opener, as: [assignees], ms: milestone title, labels: [{name,color}] }]
 //   openPRs          [{ n, title, a, d, c, u, branch, reviewers: [login], review: "none"|"commented"|"changes"|"approved"|null,
 //                       ci: "success"|"failure"|"pending"|"none"|null, labels, files: [{f, s, add, del}], screens: ["feature/Key"] }]
@@ -91,6 +93,46 @@ async function api(url, { all = false } = {}) {
     out.push(...body);
     url = next;
   }
+  return out;
+}
+
+const REVIEW_STATES = { APPROVED: 'A', CHANGES_REQUESTED: 'C', COMMENTED: 'R', DISMISSED: 'D' };
+
+/**
+ * Size and reviews of every PR through GraphQL (100 PRs per call), which REST would need one call per PR for.
+ * Needs GITHUB_TOKEN: GraphQL has no anonymous access. Returns { number: { size, rv: [[login, state, unix]] } }.
+ */
+async function prReviews() {
+  const [owner, name] = REPO.split('/');
+  const query = `query($owner: String!, $name: String!, $cursor: String) {
+    repository(owner: $owner, name: $name) {
+      pullRequests(first: 100, after: $cursor) {
+        pageInfo { hasNextPage endCursor }
+        nodes { number additions deletions reviews(first: 50) { nodes { author { login __typename } state submittedAt } } }
+      }
+    }
+  }`;
+  const out = {};
+  let cursor = null;
+  do {
+    apiCalls++;
+    const res = await fetch('https://api.github.com/graphql', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${TOKEN}`, 'User-Agent': 'festivar-dashboard', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables: { owner, name, cursor } }),
+    });
+    const json = await res.json();
+    if (!res.ok || json.errors) throw new Error(`GraphQL: ${res.status} ${JSON.stringify(json.errors || json).slice(0, 300)}`);
+    const page = json.data.repository.pullRequests;
+    for (const pr of page.nodes) {
+      out[pr.number] = {
+        size: pr.additions + pr.deletions,
+        rv: pr.reviews.nodes.filter((r) => r.author && r.submittedAt)
+          .map((r) => [person(r.author.login, null, null, r.author.__typename === 'Bot'), REVIEW_STATES[r.state] || 'R', Date.parse(r.submittedAt) / 1000]),
+      };
+    }
+    cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
+  } while (cursor);
   return out;
 }
 
@@ -202,9 +244,11 @@ async function main() {
   }
 
   // ---- PRs
+  const reviews = TOKEN ? await prReviews() : {};
   const prs = pulls.map((p) => ({
     n: p.number, title: p.title, a: fromApiUser(p.user), s: p.state, d: !!p.draft,
     c: p.created_at, m: p.merged_at, cl: p.closed_at, u: p.updated_at,
+    ...reviews[p.number],
   }));
 
   // ---- Issues (the issues endpoint also returns PRs)
