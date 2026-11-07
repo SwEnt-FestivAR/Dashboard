@@ -27,6 +27,8 @@
 //                    { feature, key, screen: FileInfo|null, viewModel: FileInfo|null, openPRs: [n], tests: { ui: [name], unit: [name] } }
 //   FileInfo         on main:     { path, lines, todos, author, created: unix, lastModified: unix, lastAuthor, commits, contributors: [{login, n}] }
 //                    only in a PR: { path, inPR: n, author, created: unix, lines, contributors }
+//   navigation       { screens: [route names, AppScreens enum order], edges: [{ from, to, kind: "go"|"back" }] }
+//                    (see navigationGraph() for how it is read)
 //   hotspots         top HOTSPOTS Kotlin files of app/src by commits × lines, most first:
 //                    [{ f: path, n: commits touching it (merges excluded), lines, authors: [{login, n}] (most first) }]
 //
@@ -129,6 +131,33 @@ function resolve(name, email, sha, shaToLogin) {
   const cands = Object.values(people).filter((p) => !p.bot && p.name.toLowerCase().split(/\s+/)[0] === lower);
   if (cands.length === 1) return (nameToLogin[lower] = cands[0].login);
   return person(name, name, `https://github.com/identicons/${encodeURIComponent(name)}.png`, /bot/i.test(name));
+}
+
+/**
+ * Navigation graph read from FestivAR's navigation/ folder, following its conventions:
+ *  - routes = entries of `enum class AppScreens { … }`
+ *  - edges come from `class <Screen>Navigator` files: every `navigate(AppScreens.X…)` is a "go" edge and every
+ *    `popBackStack(AppScreens.X…)` a "back" edge from <Screen> to X. Route helpers like `AppScreens.taskDetails(id)`
+ *    map to `TaskDetails`. navigate() calls written directly in the NavGraph files are not read.
+ */
+function navigationGraph(allFiles) {
+  const read = (f) => fs.readFileSync(path.join(SRC, f), 'utf8');
+  const navFiles = allFiles.filter((f) => /^app\/src\/main\/.*\/navigation\/.*\.kt$/.test(f));
+  const screens = [];
+  const edges = new Map();
+  for (const f of navFiles) {
+    const text = read(f);
+    const enumBody = /enum class AppScreens\s*\{([^;}]*)/.exec(text);
+    if (enumBody) screens.push(...enumBody[1].split(',').map((s) => s.trim()).filter(Boolean));
+    const from = /class (\w+)Navigator\b/.exec(text)?.[1];
+    if (!from) continue;
+    for (const [, call, target] of text.matchAll(/\b(navigate|popBackStack)\(\s*AppScreens\.(\w+)/g)) {
+      const to = target[0].toUpperCase() + target.slice(1);
+      const kind = call === 'navigate' ? 'go' : 'back';
+      if (to !== from) edges.set(`${from}>${to}>${kind}`, { from, to, kind });
+    }
+  }
+  return { screens, edges: [...edges.values()] };
 }
 
 async function main() {
@@ -271,6 +300,7 @@ async function main() {
     .slice(0, HOTSPOTS);
 
   const data = {
+    navigation: navigationGraph(allFiles),
     repo: REPO, siteRepo: process.env.GITHUB_REPOSITORY || 'SwEnt-FestivAR/General-information', branch: defaultBranch, generatedAt: new Date().toISOString(), hasToken: !!TOKEN,
     people, commits, prs, issues, openPRs,
     milestones: milestones.map((m) => ({ title: m.title, state: m.state, due: m.due_on, open: m.open_issues, closed: m.closed_issues, url: m.html_url, description: m.description })),
