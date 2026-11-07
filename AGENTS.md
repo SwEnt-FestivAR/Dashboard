@@ -44,6 +44,8 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
         │   ├── card.js          HTML of one screen card
         │   ├── timeline.js      Gantt view of the screens (Cards / Timeline toggle)
         │   └── status-dialog.js dialog that builds a status.json entry
+        ├── reviews/
+        │   └── stats.js         review / cycle time / PR size statistics (pure logic)
         ├── code/
         │   └── nav-graph.js     SVG of the navigation graph (hand-made layout)
         └── tabs/                one module per tab
@@ -52,6 +54,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
             ├── week.js
             ├── screens.js
             ├── prs.js
+            ├── reviews.js       review stats, who-reviews-whom matrix, cycle time, PR sizes
             ├── milestones.js
             ├── code.js          navigation graph + hotspots (data.navigation, data.hotspots)
             └── person.js        profile page, hidden from the nav, route #person/<login>
@@ -62,7 +65,7 @@ Generated, git-ignored, **never committed**: `site/data.json`, `site/status.json
 ### Dependency direction
 
 ```
-main.js ──> tabs/index.js ──> tabs/*.js ──> screens/*.js, code/*.js ──> core/ui.js ──> core/store.js ──> core/utils.js
+main.js ──> tabs/index.js ──> tabs/*.js ──> screens/*.js, code/*.js, reviews/*.js ──> core/ui.js ──> core/store.js ──> core/utils.js
 ```
 
 - Imports only go **left to right** (downwards).
@@ -231,7 +234,7 @@ node scripts/serve.mjs                                              # http://loc
 ```
 
 - ES modules don't load from `file://`, so always go through a server.
-- Without `GITHUB_TOKEN`, `hasToken` is false: PR reviews and CI status are null, and the kanban shows 2 columns instead of 4.
+- Without `GITHUB_TOKEN`, `hasToken` is false: PR reviews and CI status are null, the kanban shows 2 columns instead of 4, and `prs[].rv` / `size` are missing (GraphQL has no anonymous access), so the Reviews tab only shows cycle time. To check the Reviews UI locally, inject fake `rv`/`size` values into your local `site/data.json` (it is git-ignored), then re-run the fetch script to restore it.
 - On Windows PowerShell, set variables with `$env:CACHE_DIR='.cache'`, or use Git Bash.
 
 ## 9. Checking a change

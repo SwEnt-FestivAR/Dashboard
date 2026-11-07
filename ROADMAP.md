@@ -11,9 +11,9 @@ Features validated by the team, with the design choices already made. Implement 
 ## Features
 
 - [x] **This week tab:** a calendar week (Monday → Sunday) with ← → navigation. It lists merged PRs, closed issues, new screens, opened PRs, stale PRs and the most active people, and has a "Copy as Markdown" button for meetings or Discord.
-- [ ] **Reviews tab, review stats:** per person, reviews given, median time to first review on their PRs, and review load balance.
-- [ ] **Reviews tab, who-reviews-whom matrix:** a heatmap of reviewer × PR author. It highlights pairs and people who never get reviewed.
-- [ ] **Reviews tab, PR cycle time:** open → merge time (weekly median, and per person), PR size buckets (S < 100, M < 400, L < 1000, XL lines changed), and a warning on XL PRs.
+- [x] **Reviews tab, review stats:** per person, reviews given, median time to first review on their PRs, and review load balance.
+- [x] **Reviews tab, who-reviews-whom matrix:** a heatmap of reviewer × PR author. It highlights pairs and people who never get reviewed.
+- [x] **Reviews tab, PR cycle time:** open → merge time (weekly median, and per person), PR size buckets (S < 100, M < 400, L < 1000, XL lines changed), and a warning on XL PRs.
 - [x] **Profile page** (`#person/<login>`, opened from the "Profile →" link on contributor cards and from search): a GitHub-style activity calendar, plus their PRs, issues and screens. Still to do: add their reviews once review data exists, and make avatars elsewhere link to profiles.
 - [x] **Screens timeline:** a Gantt chart per screen showing first issue → file created → merged → finalized, as a toggle in the Screens tab.
 - [x] **Code tab, navigation graph:** **hand-made SVG**, no library. Screens are laid out in columns by feature, arrows come from FestivAR's navigation code (routes in `navigation/`), the color shows the status, and clicking opens the screen card. The edges are extracted in `fetch-data.mjs`.

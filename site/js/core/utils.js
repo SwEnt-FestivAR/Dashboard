@@ -32,6 +32,16 @@ export function weekStart(t) {
   return d.getTime() / 1000;
 }
 
+/** Median of a list of numbers (null for an empty list). */
+export function median(values) {
+  if (!values.length) return null;
+  const s = [...values].sort((a, b) => a - b), mid = s.length >> 1;
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+}
+
+/** Seconds -> "5h", "2.5d". */
+export const fmtDuration = (sec) => (sec == null ? '—' : sec < DAY ? `${Math.round(sec / 3600)}h` : `${(sec / DAY).toFixed(1)}d`);
+
 export const uniq = (items) => [...new Set(items)];
 
 /** { key: count } of how many times each key appears. */
