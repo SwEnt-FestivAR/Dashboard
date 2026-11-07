@@ -1,7 +1,7 @@
-// This week tab: what happened in one calendar week (Monday → Sunday, UTC), with ← → navigation and a
-// "Copy as Markdown" summary for meetings or Discord.
+// This week tab: what happened in one week (Friday 12:00 → next Friday 12:00, see WEEK_START in utils.js),
+// with ← → navigation and a "Copy as Markdown" summary for meetings or Discord.
 
-import { $, $$, DAY, countBy, esc, fmtDate, plural, ts, weekStart } from '../core/utils.js';
+import { $, $$, DAY, addWeeks, countBy, esc, fmtWeekDay, plural, ts, weekStart } from '../core/utils.js';
 import { D, NOW, P, nameOf, repoUrl } from '../core/store.js';
 import { avatar, extLink, issueRow, kpis } from '../core/ui.js';
 
@@ -40,11 +40,12 @@ function setup() {
 
 /** Everything the tab shows for the selected week. */
 function weekData() {
-  const from = weekStart(NOW) - state.offset * 7 * DAY, to = from + 7 * DAY;
+  const from = addWeeks(weekStart(NOW), -state.offset), to = addWeeks(from, 1);
   const inWeek = (t) => t >= from && t < to;
   const created = (u) => Math.min(...[u.screen, u.viewModel].filter((f) => f && !f.inPR).map((f) => f.created));
   return {
     from,
+    to,
     current: state.offset === 0,
     merged: D.prs.filter((p) => inWeek(ts(p.m))),
     opened: D.prs.filter((p) => inWeek(ts(p.c))),
@@ -60,7 +61,7 @@ const list = (items, row, empty) => items.map(row).join('') || `<li class="empty
 
 function render() {
   const w = weekData();
-  $('#weekTitle').textContent = `Week of ${fmtDate(w.from)}${w.current ? ' (current)' : ''}`;
+  $('#weekTitle').textContent = `${fmtWeekDay(w.from)} → ${fmtWeekDay(w.to)}${w.current ? ' (current)' : ''}`;
   $('#weekNav button[data-d="-1"]').disabled = w.current;
   $('#weekKpis').innerHTML = kpis([
     ['Commits', w.commits.reduce((t, [, n]) => t + n, 0)],
@@ -81,7 +82,7 @@ function render() {
 function markdown(w) {
   const section = (title, items, line) => (items.length ? `\n### ${title}\n${items.map(line).join('\n')}\n` : '');
   const pr = (p) => `- #${p.n} ${p.title} (@${p.a})`;
-  return `## FestivAR — week of ${fmtDate(w.from)}
+  return `## FestivAR — ${fmtWeekDay(w.from)} → ${fmtWeekDay(w.to)}
 **${plural(w.merged.length, 'PR')} merged · ${plural(w.closed.length, 'issue')} closed · ${plural(w.newScreens.length, 'new screen')}**
 ${section('Merged PRs', w.merged, pr)}${section('Closed issues', w.closed, (i) => `- #${i.n} ${i.title}${i.as.length ? ` (${i.as.map((a) => `@${a}`).join(', ')})` : ''}`)}${section('New screens', w.newScreens, (u) => `- ${u.key} (${u.feature})`)}${section('Most active', w.commits, ([l, n]) => `- ${P(l).name}: ${plural(n, 'commit')}`)}${w.current ? section('Stale open PRs', w.stale, pr) : ''}`;
 }

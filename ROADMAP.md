@@ -10,7 +10,7 @@ Features validated by the team, with the design choices already made. Implement 
 
 ## Features
 
-- [x] **This week tab:** a calendar week (Monday → Sunday) with ← → navigation. It lists merged PRs, closed issues, new screens, opened PRs, stale PRs and the most active people, and has a "Copy as Markdown" button for meetings or Discord.
+- [x] **This week tab:** a week from Friday 12:00 to the next Friday 12:00 (sprint boundary), with ← → navigation. It lists merged PRs, closed issues, new screens, opened PRs, stale PRs and the most active people, and has a "Copy as Markdown" button for meetings or Discord.
 - [x] **Reviews tab, review stats:** per person, reviews given, median time to first review on their PRs, and review load balance.
 - [x] **Reviews tab, who-reviews-whom matrix:** a heatmap of reviewer × PR author. It highlights pairs and people who never get reviewed.
 - [x] **Reviews tab, PR cycle time:** open → merge time (weekly median, and per person), PR size buckets (S < 100, M < 400, L < 1000, XL lines changed), and a warning on XL PRs.

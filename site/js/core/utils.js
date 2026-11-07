@@ -24,13 +24,27 @@ export const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 /** Lowercase letters and digits only: "Task details" and "TaskDetails" both become "taskdetails". */
 export const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-/** Unix time of the Monday 00:00 UTC starting the week that contains t. */
+/** A week (sprint) runs from Friday 12:00 to the next Friday 12:00, in the viewer's local time. */
+export const WEEK_START = { day: 5, hour: 12 }; // day: 0 = Sunday … 5 = Friday
+
+/** Unix time of the start (Friday 12:00 local) of the week that contains t. */
 export function weekStart(t) {
   const d = new Date(t * 1000);
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  d.setDate(d.getDate() - ((d.getDay() - WEEK_START.day + 7) % 7));
+  d.setHours(WEEK_START.hour, 0, 0, 0);
+  if (d.getTime() / 1000 > t) d.setDate(d.getDate() - 7); // Friday morning still belongs to the previous week
   return d.getTime() / 1000;
 }
+
+/** t moved by n weeks in local calendar time, so a Friday 12:00 stays 12:00 across daylight-saving changes. */
+export function addWeeks(t, n) {
+  const d = new Date(t * 1000);
+  d.setDate(d.getDate() + 7 * n);
+  return d.getTime() / 1000;
+}
+
+/** "Fri 31 Oct, 12:00". */
+export const fmtWeekDay = (t) => new Date(t * 1000).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 /** Median of a list of numbers (null for an empty list). */
 export function median(values) {

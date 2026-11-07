@@ -1,7 +1,7 @@
 // Profile page of one person, reached by the route "#person/<login>" (hidden from the nav):
 // totals, a GitHub-style activity calendar, and their PRs, issues and screens.
 
-import { $, DAY, countBy, esc, fmtDate, fmtNum, plural, ts, weekStart } from '../core/utils.js';
+import { $, DAY, addWeeks, countBy, esc, fmtDate, fmtNum, plural, ts, weekStart } from '../core/utils.js';
 import { D, NOW, repoUrl } from '../core/store.js';
 import { avatar, extLink, issueRow, kpis } from '../core/ui.js';
 import { unitAssignees } from '../screens/units.js';
@@ -37,14 +37,14 @@ function screenRole(u, login) {
 function calendar(login) {
   const perDay = countBy(D.commits.filter((c) => c.a === login).map((c) => Math.floor(c.t / DAY)));
   const max = Math.max(1, ...Object.values(perDay));
-  const first = weekStart(NOW) - (CALENDAR_WEEKS - 1) * 7 * DAY;
+  const first = addWeeks(weekStart(NOW), 1 - CALENDAR_WEEKS); // columns are weeks, Friday to Thursday
   const weeks = [];
   for (let w = 0; w < CALENDAR_WEEKS; w++) {
     const days = [];
     for (let d = 0; d < 7; d++) {
       const t = first + (w * 7 + d) * DAY;
       const n = perDay[Math.floor(t / DAY)] || 0;
-      const level = t > NOW ? 'future' : `l${n ? Math.ceil((4 * n) / max) : 0}`;
+      const level = Math.floor(t / DAY) > Math.floor(NOW / DAY) ? 'future' : `l${n ? Math.ceil((4 * n) / max) : 0}`;
       days.push(`<i class="${level}" title="${fmtDate(t)}: ${plural(n, 'commit')}"></i>`);
     }
     weeks.push(`<div>${days.join('')}</div>`);

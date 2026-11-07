@@ -1,6 +1,6 @@
 // Contributors tab: KPIs, one card per person, and charts, filtered by period.
 
-import { $, $$, DAY, esc, fmtNum, seg, toggle, ts, weekStart } from '../core/utils.js';
+import { $, $$, DAY, addWeeks, esc, fmtNum, seg, toggle, ts, weekStart } from '../core/utils.js';
 import { D, NOW, P, color, nameOf } from '../core/store.js';
 import { avatar, chart, clearChart, kpis, peopleBarChart } from '../core/ui.js';
 
@@ -151,7 +151,7 @@ function renderWeeklyChart(logins) {
   if (!events.length) return clearChart('timeChart');
 
   const weeks = [];
-  for (let w = weekStart(Math.min(...events.map(([t]) => t))); w <= weekStart(NOW); w += 7 * DAY) weeks.push(w);
+  for (let w = weekStart(Math.min(...events.map(([t]) => t))); w <= weekStart(NOW); w = addWeeks(w, 1)) weeks.push(w);
   const index = new Map(weeks.map((w, i) => [w, i]));
   const series = Object.fromEntries(logins.map((l) => [l, weeks.map(() => 0)]));
   for (const [t, a] of events) if (series[a]) series[a][index.get(weekStart(t))]++;
@@ -169,7 +169,7 @@ function renderWeeklyChart(logins) {
         tooltip: { itemSort: (a, b) => b.raw - a.raw, filter: (item) => item.raw > 0 },
       },
       scales: {
-        x: { stacked: true, grid: { display: false }, title: { display: true, text: 'Week of' } },
+        x: { stacked: true, grid: { display: false }, title: { display: true, text: 'Week starting Friday 12:00' } },
         y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } },
       },
     },
