@@ -34,7 +34,7 @@ jobs:
 
       - name: Collect data
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # created automatically by GitHub for each run, nothing to set up
           FESTIVAR_DIR: festivar
         run: node scripts/fetch-data.mjs
 

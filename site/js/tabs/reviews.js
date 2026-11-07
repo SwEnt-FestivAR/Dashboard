@@ -1,5 +1,6 @@
 // Reviews tab: who reviews how much, who reviews whom, how long PRs wait, and PR cycle time and size.
-// Review data needs the GitHub token (it exists on the deployed site); cycle time works without it.
+// Review data needs a token: the automatic GITHUB_TOKEN of GitHub Actions provides it on the deployed site
+// (nothing to configure). Cycle time works without it.
 
 import { $, esc, fmtDuration } from '../core/utils.js';
 import { D, P } from '../core/store.js';
@@ -7,8 +8,8 @@ import { avatar, chart, kpis, peopleBarChart } from '../core/ui.js';
 import { SIZES, overview, reviewMatrix, reviewerStats, weeklyCycleTime } from '../reviews/stats.js';
 
 const html = `
-  <div class="card notice" id="reviewNotice" hidden>Review data comes from the GitHub GraphQL API, which needs a token:
-    it is filled on the deployed site (GitHub Actions). Locally, only cycle time is available.</div>
+  <div class="card notice" id="reviewNotice" hidden>Review data comes from the GitHub GraphQL API, which needs a token.
+    The deployed site gets one automatically from GitHub Actions (nothing to configure); locally, only cycle time is available.</div>
   <div class="kpis" id="reviewKpis"></div>
   <div class="grid2">
     <div class="card"><div class="card-head"><h3>PRs reviewed per person</h3><span class="muted small">distinct PRs of others</span></div>

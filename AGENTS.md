@@ -132,6 +132,7 @@ export default {
   - developed = on main
   - tested = UI tests, plus unit tests when there is a ViewModel
   - finalized and frozen are manual only, set in `status.json`. A frozen screen shows a warning if it changes after `since` or an open PR touches it.
+- **Hotspots** (`hotspots()` in `scripts/lib/repo.mjs`): score = heat × log2(1 + complexity). heat = recency-weighted activity (each change halved every 14 days, weighted by log of lines changed); complexity = sum of indentation levels of code lines. Change the half-life or the formula there, and update the explanation text in `tabs/code.js`.
 - **Navigation graph**: `navigationGraph()` in `scripts/lib/repo.mjs` reads the `AppScreens` enum (nodes) and the `navigate()` / `popBackStack()` calls of `class XNavigator` files (edges). If FestivAR changes this convention, update that function. On the site, columns and rows are ordered by distance from the start screen.
 - **Issues of a screen** (`unitIssues`) = open issues whose normalized title contains the screen key, plus the numbers listed in `status.json → screens[id].issues`.
 - **Planned screens** (`plannedUnits`) are derived in the browser, in the Screens tab `setup()`, from open issue titles such as "… the X Screen/ViewModel". One is created only when no unit named X exists yet. When a PR creates the file, the real unit replaces it automatically.
@@ -200,6 +201,7 @@ Keep keys short (the file is downloaded on every visit), and prefer deriving val
 
 ### Data scripts (`scripts/`)
 - Only Node built-ins, plus `git` called through `execFileSync`, never through a shell string.
+- **No secrets.** The workflow only uses the automatic `GITHUB_TOKEN` of GitHub Actions; the team does not want to manage tokens or secrets. Don't add features that need one (a personal access token, a webhook URL…). If something cannot be done with `GITHUB_TOKEN` or without auth, leave it out.
 - **API budget:** the workflow token allows about 1000 requests per hour.
   - Per-item calls (files, reviews, check-runs) are made only for **open** PRs.
   - Never add per-commit or per-closed-PR calls: use `git log` on the clone instead.
