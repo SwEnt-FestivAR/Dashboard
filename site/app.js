@@ -1,7 +1,26 @@
 'use strict';
 // FestivAR dashboard: renders data.json (built by scripts/fetch-data.mjs) and status.json.
+//
+// Architecture (no framework, no build step):
+//   - boot() loads both JSON files once, then showTab() renders the tab named in location.hash.
+//   - Each tab has one render function (renderContributors, renderScreens, renderPRs, renderMilestones)
+//     that rebuilds its whole section with innerHTML from D (data) + S (UI state). Controls just update
+//     S and call the render function again. That is simple and fast enough for this data size.
+//   - Charts go through chart(), which destroys the previous Chart.js instance on the same canvas
+//     and applies theme colors.
+//   - Any text coming from GitHub (titles, names, labels) MUST go through esc() before innerHTML.
+//
+// Adding a tab: add a <a data-tab="x"> in the nav and a <section id="tab-x" class="tab" hidden> in
+// index.html, write renderX(), then register it in showTab() (valid list + render map).
+// The data.json schema is documented at the top of scripts/fetch-data.mjs.
 
+/** One color per person, assigned in login order so it stays stable across runs. */
 const PALETTE = ['#6d4aff', '#f43f5e', '#10b981', '#f59e0b', '#0ea5e9', '#ec4899', '#84cc16', '#8b5cf6', '#14b8a6', '#f97316', '#64748b'];
+/**
+ * Screen statuses, in progress order. `css` is the CSS variable holding the color (style.css :root).
+ * The first three are computed by autoStatus(); finalized/frozen only come from status.json.
+ * To add a status: add it here and its color variable in style.css. status.json accepts any id listed here.
+ */
 const STATUSES = [
   { id: 'in-dev', label: 'In development', css: '--s-indev', desc: 'Only exists in an open PR' },
   { id: 'developed', label: 'Developed', css: '--s-developed', desc: 'Merged on main' },
@@ -11,11 +30,18 @@ const STATUSES = [
 ];
 const DAY = 86400;
 
+// D = data.json, STATUS = status.json, NOW = generatedAt in unix seconds (used as "now" everywhere,
+// so ages like "3d ago" are relative to the data, not to when the page is opened).
 let D, STATUS = { screens: {} }, NOW;
-const S = { days: 0, hideBots: true, metric: 'commits', timeMetric: 'commits', focus: new Set(), ms: null, msState: 'open' };
+// UI state. days: period filter (0 = all time); metric/timeMetric: selected chart metric; focus: logins
+// clicked on the contributor cards; feature: screens feature filter; openUnits: screen cards whose issue list
+// is expanded; ms/msState: selected milestone + issue state.
+const S = { openUnits: new Set(), days: 0, hideBots: true, metric: 'commits', timeMetric: 'commits', focus: new Set(), ms: null, msState: 'open' };
 const charts = {};
 
+// ---------------------------------------------------------------- helpers
 const $ = (s) => document.querySelector(s);
+/** HTML-escapes a value. Use it for every piece of GitHub data inserted with innerHTML. */
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const ts = (iso) => (iso ? Date.parse(iso) / 1000 : null);
@@ -29,6 +55,7 @@ function ago(t) {
   if (d < 30) return `${Math.round(d)}d ago`;
   return `${Math.round(d / 30)}mo ago`;
 }
+/** Person lookup that never fails (unknown logins get a placeholder). */
 const P = (login) => D.people[login] || { login, name: login || 'unknown', avatar: '', bot: false };
 const color = (login) => P(login).color || '#64748b';
 const avatar = (login, cls = '') => `<img class="avatar ${cls}" src="${esc(P(login).avatar)}" alt="" title="${esc(P(login).name)} (@${esc(login)})" loading="lazy">`;
@@ -60,6 +87,7 @@ const repoUrl = (p = '') => `https://github.com/${D.repo}${p}`;
   showTab();
 })();
 
+/** Shows the section matching location.hash and renders it. Register new tabs here. */
 function showTab() {
   const tab = (location.hash.slice(1) || 'contributors');
   const valid = ['contributors', 'screens', 'prs', 'milestones'].includes(tab) ? tab : 'contributors';
@@ -68,6 +96,7 @@ function showTab() {
   ({ contributors: renderContributors, screens: renderScreens, prs: renderPRs, milestones: renderMilestones })[valid]();
 }
 
+/** Wires a segmented control (.seg): clicking a button marks it .on and calls cb(button.dataset[key]). */
 function seg(sel, key, cb) {
   document.querySelectorAll(`${sel} button`).forEach((b) => b.addEventListener('click', () => {
     document.querySelectorAll(`${sel} button`).forEach((x) => x.classList.toggle('on', x === b));
@@ -75,6 +104,7 @@ function seg(sel, key, cb) {
   }));
 }
 
+/** Binds every control once at boot and fills the dropdowns from the data. */
 function setupControls() {
   $('#themeBtn').onclick = () => {
     const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
@@ -86,7 +116,7 @@ function setupControls() {
   seg('#metric', 'm', (v) => { S.metric = v; renderContributors(); });
   seg('#timeMetric', 'm', (v) => { S.timeMetric = v; renderContributors(); });
   $('#hideBots').onchange = (e) => { S.hideBots = e.target.checked; renderContributors(); };
-  ['#screenSearch', '#screenAuthor', '#screenStatus'].forEach((s) => $(s).addEventListener('input', renderScreens));
+  ['#screenSearch', '#screenAuthor', '#screenStatus', '#withIssues'].forEach((s) => $(s).addEventListener('input', renderScreens));
   ['#prAuthor', '#staleOnly'].forEach((s) => $(s).addEventListener('input', renderPRs));
   seg('#msIssueState', 's', (v) => { S.msState = v; renderMilestoneIssues(); });
 
@@ -102,6 +132,7 @@ function setupControls() {
   setupDialog();
 }
 
+/** Creates (or recreates) a Chart.js chart on <canvas id>, with grid/text colors from the current theme. */
 function chart(id, config) {
   charts[id]?.destroy();
   const grid = css('--border'), text = css('--muted');
@@ -114,6 +145,13 @@ function chart(id, config) {
 }
 
 // ---------------------------------------------------------------- contributors
+/**
+ * Per-person totals for the selected period (S.days), sorted by commits.
+ *  - commits / add / del: commits on main in the period (merge commits excluded by the fetch script)
+ *  - merged: PRs merged in the period, credited to the PR author
+ *  - open: PRs open right now (ignores the period)
+ *  - issues: issues closed in the period (not "not planned"), credited to every assignee
+ */
 function computeStats() {
   const since = S.days ? NOW - S.days * DAY : 0;
   const st = {};
@@ -186,6 +224,7 @@ function renderContributors() {
   renderTimeChart(shown.map((s) => s.login));
 }
 
+/** Unix time of the Monday 00:00 UTC that starts the week containing t. */
 function weekStart(t) {
   const d = new Date(t * 1000); d.setUTCHours(0, 0, 0, 0);
   d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
@@ -218,13 +257,29 @@ function renderTimeChart(logins) {
 }
 
 // ---------------------------------------------------------------- screens
+const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+/**
+ * Open issues about a screen: issues whose title contains the screen key once spaces and punctuation are
+ * removed ("Use DataRepository in Task details" -> taskdetails -> TaskDetails), plus issue numbers listed
+ * manually in status.json ("issues": [123]). The fetch script does not store issue bodies, so only titles are matched.
+ */
+function unitIssues(u) {
+  const k = norm(u.key), extra = STATUS.screens[unitId(u)]?.issues || [];
+  return D.issues.filter((i) => i.s === 'open' && (norm(i.title).includes(k) || extra.includes(i.n)));
+}
+/** A unit's id, e.g. "task/CreateTask". It is also the key used in status.json. */
 const unitId = (u) => `${u.feature}/${u.key}`;
 const onMain = (f) => f && !f.inPR;
+/** Status deduced from the code: in-dev (only in an open PR) < developed (on main) < tested (UI tests + VM unit tests). */
 function autoStatus(u) {
   if (!onMain(u.screen) && !onMain(u.viewModel)) return 'in-dev';
   if (u.tests.ui.length && (!onMain(u.viewModel) || u.tests.unit.length)) return 'tested';
   return 'developed';
 }
+/**
+ * Effective status: the status.json entry wins over autoStatus().
+ * frozenBroken = frozen, but an open PR touches it or a file changed more than a day after `since`.
+ */
 function unitStatus(u) {
   const manual = STATUS.screens[unitId(u)];
   const status = STATUSES.some((s) => s.id === manual?.status) ? manual.status : autoStatus(u);
@@ -236,6 +291,7 @@ function unitStatus(u) {
 const stInfo = (id) => STATUSES.find((s) => s.id === id);
 const stColor = (id) => css(stInfo(id).css);
 
+/** Stacked progress bar segments (one per status) for a list of units. */
 function statusBar(units) {
   return STATUSES.map((s) => {
     const n = units.filter((u) => unitStatus(u).status === s.id).length;
@@ -258,7 +314,8 @@ function renderScreens() {
     (S.feature === 'all' || u.feature === S.feature) &&
     (!q || `${u.key} ${u.feature} ${u.screen?.path || ''} ${u.viewModel?.path || ''}`.toLowerCase().includes(q)) &&
     (!au || u.screen?.author === au || u.viewModel?.author === au) &&
-    (!stf || unitStatus(u).status === stf));
+    (!stf || unitStatus(u).status === stf) &&
+    (!$('#withIssues').checked || unitIssues(u).length));
 
   const features = [...new Set(filtered.map((u) => u.feature))];
   $('#features').innerHTML = features.map((f) => {
@@ -276,10 +333,26 @@ function renderScreens() {
       <div class="units">${us.map(renderUnit).join('')}</div></div>`;
   }).join('') || '<div class="empty">No screen matches these filters</div>';
   document.querySelectorAll('.status-btn').forEach((b) => (b.onclick = () => openDialog(b.dataset.id)));
+  document.querySelectorAll('.issues-btn').forEach((b) => (b.onclick = () => {
+    S.openUnits.has(b.dataset.id) ? S.openUnits.delete(b.dataset.id) : S.openUnits.add(b.dataset.id);
+    renderScreens();
+  }));
 }
 
+/**
+ * One screen card: header with status badge, Screen + ViewModel blocks, footer with tests, PRs and the
+ * open-issues button. Clicking that button expands the issue list (open cards are kept in S.openUnits).
+ */
 function renderUnit(u) {
   const st = unitStatus(u);
+  const id = unitId(u), issues = unitIssues(u), expanded = S.openUnits.has(id);
+  const assignees = [...new Set(issues.flatMap((i) => i.as))];
+  const issuesBtn = issues.length
+    ? `<button class="issues-btn ${expanded ? 'on' : ''}" data-id="${esc(id)}" title="Show the open issues about this screen">
+        ${expanded ? '▾' : '▸'} ${issues.length} open issue${issues.length > 1 ? 's' : ''}
+        ${assignees.length ? `<span class="avatars">${assignees.map((a) => avatar(a, 'xs')).join('')}</span>` : '<span class="minus small">unassigned</span>'}</button>`
+    : '<span class="pill">no open issue</span>';
+  const issuesPanel = expanded && issues.length ? `<ul class="issue-list unit-issues">${issues.map(issueRow).join('')}</ul>` : '';
   const info = stInfo(st.status);
   const tests = [
     u.tests.ui.length ? `<span class="pill ok" title="${esc(u.tests.ui.join(', '))}">✓ ${u.tests.ui.length} UI test file${u.tests.ui.length > 1 ? 's' : ''}</span>` : '<span class="pill bad">✗ no UI test</span>',
@@ -295,10 +368,12 @@ function renderUnit(u) {
       <button class="status-btn" data-id="${esc(unitId(u))}" title="${esc(info.desc)} — click to change">${info.label} <small>${st.manual ? '· manual' : '· auto'}</small></button>
     </div>
     <div class="blocks">${renderBlock(u.screen, 'Screen')}${renderBlock(u.viewModel, 'ViewModel')}</div>
-    <div class="unit-foot">${tests.join('')}${prs.join('')}${st.note ? `<div class="note">📝 ${esc(st.note)}</div>` : ''}</div>
+    <div class="unit-foot">${issuesBtn}${tests.join('')}${prs.join('')}${st.note ? `<div class="note">📝 ${esc(st.note)}</div>` : ''}</div>
+    ${issuesPanel}
   </div>`;
 }
 
+/** The Screen or ViewModel half of a card. `f` is a FileInfo (see fetch-data.mjs) or null. */
 function renderBlock(f, kind) {
   if (!f) return `<div class="block missing">No ${kind}</div>`;
   const others = (f.contributors || []).filter((c) => c.login !== f.author);
@@ -316,6 +391,8 @@ function renderBlock(f, kind) {
 }
 
 // ---------------------------------------------------------------- status dialog
+// A static site cannot write to the repo, so the dialog only builds the status.json entry; the user
+// pastes it into the file on GitHub, and the push redeploys the site.
 const statusFileUrl = (mode = 'blob') => `https://github.com/${D.siteRepo}/${mode}/main/status.json`;
 let dlg = { id: null, status: null };
 function setupDialog() {
@@ -345,6 +422,7 @@ function updateDlgJson() {
 }
 
 // ---------------------------------------------------------------- open PRs
+/** Kanban of open PRs. Review columns need review data, which only exists when the fetch ran with a token. */
 function renderPRs() {
   const au = $('#prAuthor').value, staleOnly = $('#staleOnly').checked;
   const isStale = (p) => NOW - ts(p.u) > 3 * DAY;
@@ -380,6 +458,7 @@ function prCard(p, stale) {
 }
 
 // ---------------------------------------------------------------- milestones
+/** Milestones plus a "No milestone" pseudo-milestone; open first. */
 function milestoneList() {
   // Counts come from the issue list (the API's counts also include PRs)
   const list = D.milestones.map((m) => {
