@@ -61,7 +61,7 @@ Generated, git-ignored, **never committed**: `site/data.json`, `site/status.json
 ### Dependency direction
 
 ```
-main.js ──> tabs/index.js ──> tabs/*.js ──> screens/*.js ──> core/ui.js ──> core/store.js ──> core/utils.js
+main.js ──> tabs/index.js ──> tabs/*.js ──> screens/*.js, code/*.js ──> core/ui.js ──> core/store.js ──> core/utils.js
 ```
 
 - Imports only go **left to right** (downwards).
