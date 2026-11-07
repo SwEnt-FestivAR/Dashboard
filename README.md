@@ -4,7 +4,7 @@ A static dashboard for [SwEnt-FestivAR/FestivAR](https://github.com/SwEnt-Festiv
 
 **Tabs**
 - **Contributors**: commits, merged PRs, open PRs, issues solved, and lines added/deleted per person, plus weekly activity. You can filter by period, hide bots, and click a person to focus the charts on them.
-- **Screens**: Screen + ViewModel blocks grouped by feature (`ui/<feature>/`). Each block shows its initial author (the commit that created the file), dates, size, other contributors, tests, the open PRs touching it, and a status.
+- **Screens**: Screen + ViewModel blocks grouped by feature (`ui/<feature>/`). Each block shows its initial author (the commit that created the file), dates, size, other contributors, tests, the open PRs touching it, and a status. Click **N open issues** on a card to see the open issues about that screen and who is assigned (issues are matched by title; add more with `"issues": [123]` in `status.json`). The **With open issues** filter keeps only those screens.
 - **Open PRs**: a kanban of open PRs (draft / needs review / changes requested / approved), with CI status, stale PRs (> 3 days idle), and the screens each PR touches.
 - **Milestones**: progress per milestone, open issues per person, unassigned issues, and the issue list for each milestone.
 
