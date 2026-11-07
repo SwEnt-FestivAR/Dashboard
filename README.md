@@ -12,6 +12,7 @@ A static dashboard for [SwEnt-FestivAR/FestivAR](https://github.com/SwEnt-Festiv
 
 | Status | Meaning | Source |
 |---|---|---|
+| Planned | not in the code yet, only named in an open issue ("Implement the My tasks Screen") | auto |
 | In development | only exists in an open PR | auto |
 | Developed | merged on `main` | auto |
 | Tested | merged, has UI tests (+ ViewModel unit tests) | auto |

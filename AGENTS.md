@@ -52,11 +52,13 @@ Key concepts:
 - **Initial author** = the author of the oldest commit of the file on main, using `git log --follow`.
 - **Tests** are linked to a unit by file name prefix (`CreateTask*Test.kt`): `androidTest/` = UI tests, `test/` = unit tests.
 - **Screen status** is `status.json` if set, otherwise `autoStatus()`:
+  - planned = only named in an open issue
   - in-dev = only in an open PR
   - developed = on main
   - tested = UI tests, plus unit tests when there is a ViewModel
   - `finalized` and `frozen` are manual only.
   - A frozen screen gets a warning if it changes after `since` or an open PR touches it.
+- **Planned screens** are computed in the browser by `plannedUnits()` from open issue titles ("… the X Screen/ViewModel"). They are created only when no unit named X exists yet. Their feature is guessed from the words ("other" if unknown), they have `planned: true`, and `plannedIssues` replaces the files. Once a PR creates the file, the unit comes from the data instead and the planned card disappears.
 - **Issues of a screen** = open issues whose title contains the screen key once spaces and punctuation are removed (`unitIssues()`), plus the numbers listed in `status.json → screens[id].issues`.
 - **"Now"** in the UI is `data.generatedAt`, not the browser clock. Ages and periods are relative to the last data refresh.
 
