@@ -56,7 +56,7 @@ async function boot() {
   $('#repoLink').textContent = D.repo;
   $('#repoLink').href = repoUrl();
   $('#updated').textContent = `Updated ${new Date(D.generatedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}`;
-  $('#tabs').innerHTML = TABS.map((t) => `<a href="#${t.id}" data-tab="${t.id}">${esc(t.label)}</a>`).join('');
+  $('#tabs').innerHTML = TABS.filter((t) => !t.hidden).map((t) => `<a href="#${t.id}" data-tab="${t.id}">${esc(t.label)}</a>`).join('');
   $('#main').innerHTML = TABS.map((t) => `<section id="tab-${t.id}" class="tab" hidden>${t.html}</section>`).join('');
 
   Chart.defaults.font.family = 'Inter, system-ui, sans-serif';

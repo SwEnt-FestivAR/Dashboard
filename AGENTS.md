@@ -49,7 +49,8 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
             ├── week.js
             ├── screens.js
             ├── prs.js
-            └── milestones.js
+            ├── milestones.js
+            └── person.js        profile page, hidden from the nav, route #person/<login>
 ```
 
 Generated, git-ignored, **never committed**: `site/data.json`, `site/status.json` (copied at deploy time), `festivar/` (the clone) and `.cache/`.
@@ -88,6 +89,7 @@ status.json (manual, this repo) ────────────────
 export default {
   id: 'prs',          // URL hash (#prs) and section id (tab-prs). Lowercase, unique
   label: 'Open PRs',  // nav text
+  hidden: false,      // optional: true = not in the nav, only reachable by its route (see person.js)
   html: `...`,        // static markup: toolbars, empty containers, <canvas>
   setup() {},         // once at boot: bind controls, fill dropdowns, derive data the tab owns
   render(arg) {},     // every time the tab is shown: rebuild the dynamic parts from D + local state

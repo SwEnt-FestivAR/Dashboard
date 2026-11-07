@@ -4,6 +4,7 @@
 //   { id, label, html, setup(), render() }
 //     id      used in the URL hash (#id) and the section id (tab-id)
 //     label   text of the nav link
+//     hidden  optional; true = not in the nav, only reachable by its route (e.g. the profile, #person/<login>)
 //     html    static markup of the section (toolbars, empty containers, canvases)
 //     setup() called once at boot, after the data is loaded and the html is in the page: bind controls,
 //             fill dropdowns
@@ -16,5 +17,6 @@ import week from './week.js';
 import screens from './screens.js';
 import prs from './prs.js';
 import milestones from './milestones.js';
+import person from './person.js';
 
-export const TABS = [contributors, week, screens, prs, milestones];
+export const TABS = [contributors, week, screens, prs, milestones, person];

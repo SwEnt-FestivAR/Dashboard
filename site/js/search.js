@@ -1,5 +1,5 @@
 // Global search palette (Ctrl+K, Cmd+K or "/"): screens, people, open PRs and issues.
-// Screens open in the Screens tab through the route "#screens/<key>"; the rest opens on GitHub.
+// Screens and people open in the dashboard ("#screens/<key>", "#person/<login>"); PRs and issues open on GitHub.
 
 import { $, $$, esc, norm } from './core/utils.js';
 import { D, P, repoUrl } from './core/store.js';
@@ -22,7 +22,7 @@ let active = 0;
 function buildIndex() {
   const screens = D.units.map((u) => ({ kind: 'Screen', label: u.key, sub: u.feature, href: `#screens/${encodeURIComponent(u.key)}`, icon: '📱' }));
   const people = Object.values(D.people).filter((p) => !p.bot)
-    .map((p) => ({ kind: 'Person', label: p.name, sub: `@${p.login}`, href: `https://github.com/${p.login}`, icon: avatar(p.login, 'xs') }));
+    .map((p) => ({ kind: 'Person', label: p.name, sub: `@${p.login}`, href: `#person/${encodeURIComponent(p.login)}`, icon: avatar(p.login, 'xs') }));
   const prs = D.prs.map((p) => ({ kind: p.s === 'open' ? 'Open PR' : p.m ? 'Merged PR' : 'Closed PR', label: p.title, sub: `#${p.n} · ${P(p.a).name}`, href: repoUrl(`/pull/${p.n}`), icon: '⇄' }));
   const issues = D.issues.map((i) => ({ kind: i.s === 'open' ? 'Open issue' : 'Closed issue', label: i.title, sub: `#${i.n}`, href: repoUrl(`/issues/${i.n}`), icon: '◎' }));
   return [...screens, ...people, ...prs, ...issues].map((it) => ({ ...it, text: norm(`${it.label} ${it.sub}`) }));

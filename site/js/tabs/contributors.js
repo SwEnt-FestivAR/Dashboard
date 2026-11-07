@@ -101,7 +101,13 @@ function render() {
     ['Lines changed', lines(sum(stats, 'add'), sum(stats, 'del')), period],
   ]);
   $('#peopleCards').innerHTML = stats.map(personCard).join('') || '<div class="empty">No activity in this period</div>';
-  for (const el of $$('.person')) el.addEventListener('click', () => { toggle(state.focus, el.dataset.login); render(); });
+  for (const el of $$('.person')) {
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('a')) return; // the "Profile" link navigates instead of focusing
+      toggle(state.focus, el.dataset.login);
+      render();
+    });
+  }
 
   const shown = stats.filter((s) => !state.focus.size || state.focus.has(s.login));
   peopleBarChart('barChart', shown.map((s) => [s.login, s[state.metric]]).sort((a, b) => b[1] - a[1]));
@@ -115,7 +121,7 @@ function personCard(s, rank) {
   return `<div class="person ${dim}" style="--c:${color(s.login)}" data-login="${esc(s.login)}" title="Click to focus the charts on this person">
     <div class="who">${avatar(s.login)}<div><b>${nameOf(s.login)}</b><span class="muted small">@${esc(s.login)}</span></div><span class="rank">#${rank + 1}</span></div>
     <div class="stats">${stat(s.commits, 'commits')}${stat(s.merged, 'merged')}${stat(s.open, 'open PRs')}${stat(s.issues, 'issues')}</div>
-    <div class="loc">${lines(s.add, s.del)}</div>
+    <div class="loc">${lines(s.add, s.del)}<a href="#person/${encodeURIComponent(s.login)}">Profile →</a></div>
   </div>`;
 }
 

@@ -9,6 +9,8 @@ A static dashboard for [SwEnt-FestivAR/FestivAR](https://github.com/SwEnt-Festiv
 - **Open PRs**: a kanban of open PRs (draft / needs review / changes requested / approved), with CI status, stale PRs (> 3 days idle), and the screens each PR touches.
 - **Milestones**: progress per milestone, open issues per person, unassigned issues, and the issue list for each milestone.
 
+Each person has a **profile page** (the **Profile →** link on their card, or search for them) with an activity calendar, their open PRs, assigned issues and screens.
+
 Press **Ctrl+K** (or **/**, or click **Search**) anywhere to search screens, people, PRs and issues.
 
 ## Screen statuses
