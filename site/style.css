@@ -96,6 +96,7 @@ input[type=search] { min-width: 220px; }
 .pill.bad { background: color-mix(in srgb, var(--bad) 15%, transparent); color: var(--bad); }
 .pill.warn { background: color-mix(in srgb, var(--warn) 15%, transparent); color: var(--warn); }
 .pill.info { background: color-mix(in srgb, var(--info) 15%, transparent); color: var(--info); }
+.pill.branch { font-family: ui-monospace, monospace; font-weight: 500; }
 a.pill:hover { text-decoration: none; filter: brightness(1.1); }
 
 /* Screens */

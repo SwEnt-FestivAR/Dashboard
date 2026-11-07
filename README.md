@@ -20,7 +20,7 @@ Press **Ctrl+K** (or **/**, or click **Search**) anywhere to search screens, peo
 | Status | Meaning | Source |
 |---|---|---|
 | Planned | not in the code yet, only named in an open issue ("Implement the My tasks Screen") | auto |
-| In development | only exists in an open PR | auto |
+| In development | not on `main` yet: only in an open PR or in any branch of the repo | auto |
 | Developed | merged on `main` | auto |
 | Tested | merged, has UI tests (+ ViewModel unit tests) | auto |
 | Finalized | done, only small fixes expected | manual |

@@ -21,7 +21,7 @@ export function screenCard(u, expanded) {
     </div>
     <div class="blocks">${blocks}</div>
     <div class="unit-foot">
-      ${issuesButton(u, issues, expanded)}${u.planned ? '' : testPills(u)}${prPills(u)}
+      ${issuesButton(u, issues, expanded)}${u.planned ? '' : testPills(u)}${prPills(u)}${branchPills(u)}
       ${st.note ? `<div class="note">📝 ${esc(st.note)}</div>` : ''}
     </div>
     ${expanded && issues.length ? `<ul class="issue-list unit-issues">${issues.map(issueRow).join('')}</ul>` : ''}
@@ -50,17 +50,32 @@ function prPills(u) {
   }).join('');
 }
 
+/** Branches with work on this screen, except the ones of open PRs (already shown as PR pills). */
+function branchPills(u) {
+  const prBranches = new Set(D.openPRs.map((p) => p.branch));
+  return (u.branches || []).filter((b) => !prBranches.has(b))
+    .map((b) => extLink(repoUrl(`/tree/${b}`), `⎇ ${esc(b)}`, 'pill branch')).join('');
+}
+
+/** Where a file lives when it is not on main yet: [link, pill label], or null for files on main. */
+function notOnMain(f) {
+  if (f.inPR) return [repoUrl(`/pull/${f.inPR}/files`), `only in PR #${f.inPR}`];
+  if (f.inBranch) return [repoUrl(`/blob/${f.inBranch}/${f.path}`), `only in ⎇ ${esc(f.inBranch)}`];
+  return null;
+}
+
 /** Half of a card for a file. `f` is a FileInfo (see the schema in fetch-data.mjs) or null. */
 function fileBlock(f, kind) {
   if (!f) return `<div class="block missing">No ${kind}</div>`;
-  const href = f.inPR ? repoUrl(`/pull/${f.inPR}/files`) : repoUrl(`/blob/${D.branch}/${f.path}`);
+  const elsewhere = notOnMain(f);
+  const href = elsewhere ? elsewhere[0] : repoUrl(`/blob/${D.branch}/${f.path}`);
   const others = (f.contributors || []).filter((c) => c.login !== f.author);
-  const history = f.inPR
-    ? `~${f.lines} lines added`
+  const history = elsewhere
+    ? `~${f.lines} lines`
     : `${f.lines} lines · ${plural(f.commits, 'commit')}${f.todos ? ` · <span class="minus">${f.todos} TODO</span>` : ''}<br>
        Last change ${ago(f.lastModified)} by ${nameOf(f.lastAuthor)}`;
   return `<div class="block">
-    <div class="kind"><span>${kind}</span>${f.inPR ? `<span class="pill warn">only in PR #${f.inPR}</span>` : ''}</div>
+    <div class="kind"><span>${kind}</span>${elsewhere ? `<span class="pill warn">${elsewhere[1]}</span>` : ''}</div>
     <div class="fname">${extLink(href, esc(f.path.split('/').pop()))}</div>
     <div class="author">${avatar(f.author)}<div><span class="muted small">Initial author</span><b>${nameOf(f.author)}</b></div></div>
     <div class="meta">Created ${fmtDate(f.created)}<br>${history}

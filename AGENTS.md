@@ -113,12 +113,12 @@ export default {
 ### Key domain concepts
 
 - **People** are keyed by GitHub login everywhere. `resolve()` in `fetch-data.mjs` maps git authors to logins (its comment lists the rules). For duplicates, add an entry to `aliases.json`. Never special-case a person in code.
-- **Unit** = one screen = a `XxxScreen.kt` plus a `XxxViewModel.kt` paired by name, under `ui/<feature>/`. Files that exist only in an open PR are included, with `inPR` set. `ui/components` and `ui/theme` are skipped (`SKIP_FEATURES`). The unit id is `feature/Key`, which is also its key in `status.json`.
+- **Unit** = one screen = a `XxxScreen.kt` plus a `XxxViewModel.kt` paired by name, under `ui/<feature>/`. Files that exist only in an open PR are included with `inPR` set, and files that exist only in another branch (from `git diff origin/main...origin/<branch>` on the clone, see `branchChanges()`) with `inBranch` set. `branches` lists every branch touching the unit; the card shows the ones without an open PR as `⎇` pills. `ui/components` and `ui/theme` are skipped (`SKIP_FEATURES`). The unit id is `feature/Key`, which is also its key in `status.json`.
 - **Initial author** = the author of the oldest commit of the file on main (`git log --follow`).
 - **Tests** are linked by file name prefix (`CreateTask*Test.kt`): `androidTest/` = UI tests, `test/` = unit tests.
 - **Statuses** (`STATUSES` in `screens/units.js`, in progress order):
   - planned = only named in an open issue
-  - in-dev = only in an open PR
+  - in-dev = not on main: only in an open PR or a branch
   - developed = on main
   - tested = UI tests, plus unit tests when there is a ViewModel
   - finalized and frozen are manual only, set in `status.json`. A frozen screen shows a warning if it changes after `since` or an open PR touches it.

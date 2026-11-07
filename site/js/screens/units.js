@@ -11,7 +11,7 @@ import { D, STATUS } from '../core/store.js';
  */
 export const STATUSES = [
   { id: 'planned', label: 'Planned', css: '--s-planned', desc: 'Not in the code yet, only mentioned in an open issue' },
-  { id: 'in-dev', label: 'In development', css: '--s-indev', desc: 'Only exists in an open PR' },
+  { id: 'in-dev', label: 'In development', css: '--s-indev', desc: 'Not on main yet: only in an open PR or a branch' },
   { id: 'developed', label: 'Developed', css: '--s-developed', desc: 'Merged on main' },
   { id: 'tested', label: 'Tested', css: '--s-tested', desc: 'Merged, with UI tests (and ViewModel unit tests)' },
   { id: 'finalized', label: 'Finalized', css: '--s-finalized', desc: 'Done, only small fixes expected' },
@@ -22,9 +22,9 @@ export const statusInfo = (id) => STATUSES.find((s) => s.id === id);
 /** A unit's id, e.g. "task/CreateTask". It is also its key in status.json. */
 export const unitId = (u) => `${u.feature}/${u.key}`;
 
-const onMain = (file) => file && !file.inPR;
+const onMain = (file) => file && !file.inPR && !file.inBranch;
 
-/** Status deduced from code and issues: planned < in-dev (only in a PR) < developed (on main) < tested. */
+/** Status deduced from code and issues: planned < in-dev (only in a PR or a branch) < developed (on main) < tested. */
 function autoStatus(u) {
   if (u.planned) return 'planned';
   if (!onMain(u.screen) && !onMain(u.viewModel)) return 'in-dev';
@@ -34,14 +34,15 @@ function autoStatus(u) {
 
 /**
  * Effective status: a valid status.json entry wins over autoStatus().
- * frozenBroken = frozen, but an open PR touches it or a file changed more than a day after `since`.
+ * frozenBroken = frozen, but an open PR or a branch touches it, or a file changed more than a day after `since`.
  */
 export function unitStatus(u) {
   const manual = STATUS.screens[unitId(u)];
   const status = statusInfo(manual?.status) ? manual.status : autoStatus(u);
   const lastChange = Math.max(u.screen?.lastModified || 0, u.viewModel?.lastModified || 0);
   const frozenSince = ts(manual?.since);
-  const frozenBroken = status === 'frozen' && (u.openPRs.length > 0 || (frozenSince && lastChange > frozenSince + DAY));
+  const touchedElsewhere = u.openPRs.length > 0 || u.branches?.length > 0;
+  const frozenBroken = status === 'frozen' && (touchedElsewhere || (frozenSince && lastChange > frozenSince + DAY));
   return { status, manual: Boolean(statusInfo(manual?.status)), note: manual?.note, frozenBroken };
 }
 
