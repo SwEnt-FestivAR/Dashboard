@@ -22,6 +22,7 @@ const PALETTE = ['#6d4aff', '#f43f5e', '#10b981', '#f59e0b', '#0ea5e9', '#ec4899
  * To add a status: add it here and its color variable in style.css. status.json accepts any id listed here.
  */
 const STATUSES = [
+  { id: 'planned', label: 'Planned', css: '--s-planned', desc: 'Not in the code yet, only mentioned in an open issue' },
   { id: 'in-dev', label: 'In development', css: '--s-indev', desc: 'Only exists in an open PR' },
   { id: 'developed', label: 'Developed', css: '--s-developed', desc: 'Merged on main' },
   { id: 'tested', label: 'Tested', css: '--s-tested', desc: 'Merged, with UI tests (and ViewModel unit tests)' },
@@ -75,6 +76,7 @@ const repoUrl = (p = '') => `https://github.com/${D.repo}${p}`;
   NOW = ts(D.generatedAt);
   Object.values(D.people).sort((a, b) => a.login.localeCompare(b.login)).forEach((p, i) => (p.color = PALETTE[i % PALETTE.length]));
   D.commits = D.commits.map(([t, a, add, del]) => ({ t, a, add, del }));
+  for (const u of plannedUnits()) { D.units.push(u); S.openUnits.add(unitId(u)); }
 
   $('#repoLink').textContent = D.repo;
   $('#repoLink').href = repoUrl();
@@ -258,13 +260,41 @@ function renderTimeChart(logins) {
 
 // ---------------------------------------------------------------- screens
 const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/**
+ * Screens that exist only in issue titles ("Implement the My tasks Screen", "Design and implement a settings screen").
+ * Takes the words right before "Screen"/"ViewModel" (after the last the/a/to/of/in/for, at most 4 words) and makes
+ * a unit with `planned: true` unless a unit with that name already exists (on main or in an open PR). So
+ * "Add the delete confirmation to the Event Details Screen" is ignored because EventDetails exists.
+ * The feature is guessed from the words (tasks -> task); unknown words go to "other".
+ * Planned units have no files: `plannedIssues` = { screen: [n], viewModel: [n] }.
+ */
+function plannedUnits() {
+  const RE = /\b(?:the|a|an)\s+([a-z][a-z0-9 ]{1,60}?)\s+(screen|viewmodel)s?\b/i;
+  const features = new Set(D.units.map((u) => u.feature));
+  const existing = D.units.map((u) => norm(u.key));
+  const found = {};
+  for (const i of D.issues.filter((x) => x.s === 'open')) {
+    const m = RE.exec(i.title);
+    if (!m) continue;
+    const words = m[1].split(/\b(?:the|a|an|to|of|in|for|on|with)\b/i).pop().trim().split(/\s+/).filter(Boolean);
+    if (!words.length || words.length > 4) continue;
+    const k = norm(words.join(''));
+    if (existing.some((e) => k.includes(e) || e.includes(k))) continue;
+    const key = words.map((w) => w[0].toUpperCase() + w.slice(1)).join('');
+    const feature = words.map((w) => w.toLowerCase().replace(/s$/, '')).find((w) => features.has(w)) || 'other';
+    const u = (found[k] ||= { feature, key, planned: true, screen: null, viewModel: null, openPRs: [], tests: { ui: [], unit: [] }, plannedIssues: { screen: [], viewModel: [] } });
+    u.plannedIssues[/^screen$/i.test(m[2]) ? 'screen' : 'viewModel'].push(i.n);
+  }
+  return Object.values(found);
+}
 /**
  * Open issues about a screen: issues whose title contains the screen key once spaces and punctuation are
  * removed ("Use DataRepository in Task details" -> taskdetails -> TaskDetails), plus issue numbers listed
  * manually in status.json ("issues": [123]). The fetch script does not store issue bodies, so only titles are matched.
  */
 function unitIssues(u) {
-  const k = norm(u.key), extra = STATUS.screens[unitId(u)]?.issues || [];
+  const k = norm(u.key), extra = [...(STATUS.screens[unitId(u)]?.issues || []), ...Object.values(u.plannedIssues || {}).flat()];
   return D.issues.filter((i) => i.s === 'open' && (norm(i.title).includes(k) || extra.includes(i.n)));
 }
 /** A unit's id, e.g. "task/CreateTask". It is also the key used in status.json. */
@@ -272,6 +302,7 @@ const unitId = (u) => `${u.feature}/${u.key}`;
 const onMain = (f) => f && !f.inPR;
 /** Status deduced from the code: in-dev (only in an open PR) < developed (on main) < tested (UI tests + VM unit tests). */
 function autoStatus(u) {
+  if (u.planned) return 'planned';
   if (!onMain(u.screen) && !onMain(u.viewModel)) return 'in-dev';
   if (u.tests.ui.length && (!onMain(u.viewModel) || u.tests.unit.length)) return 'tested';
   return 'developed';
@@ -313,7 +344,7 @@ function renderScreens() {
   const filtered = all.filter((u) =>
     (S.feature === 'all' || u.feature === S.feature) &&
     (!q || `${u.key} ${u.feature} ${u.screen?.path || ''} ${u.viewModel?.path || ''}`.toLowerCase().includes(q)) &&
-    (!au || u.screen?.author === au || u.viewModel?.author === au) &&
+    (!au || u.screen?.author === au || u.viewModel?.author === au || (u.planned && unitIssues(u).some((i) => i.as.includes(au)))) &&
     (!stf || unitStatus(u).status === stf) &&
     (!$('#withIssues').checked || unitIssues(u).length));
 
@@ -354,7 +385,7 @@ function renderUnit(u) {
     : '<span class="pill">no open issue</span>';
   const issuesPanel = expanded && issues.length ? `<ul class="issue-list unit-issues">${issues.map(issueRow).join('')}</ul>` : '';
   const info = stInfo(st.status);
-  const tests = [
+  const tests = u.planned ? [] : [
     u.tests.ui.length ? `<span class="pill ok" title="${esc(u.tests.ui.join(', '))}">✓ ${u.tests.ui.length} UI test file${u.tests.ui.length > 1 ? 's' : ''}</span>` : '<span class="pill bad">✗ no UI test</span>',
     u.tests.unit.length ? `<span class="pill ok" title="${esc(u.tests.unit.join(', '))}">✓ ${u.tests.unit.length} unit test file${u.tests.unit.length > 1 ? 's' : ''}</span>` : '<span class="pill bad">✗ no unit test</span>',
   ];
@@ -367,10 +398,22 @@ function renderUnit(u) {
       ${st.frozenBroken ? '<span class="pill bad" title="Frozen but modified after the freeze date or touched by an open PR">⚠ touched while frozen</span>' : ''}
       <button class="status-btn" data-id="${esc(unitId(u))}" title="${esc(info.desc)} — click to change">${info.label} <small>${st.manual ? '· manual' : '· auto'}</small></button>
     </div>
-    <div class="blocks">${renderBlock(u.screen, 'Screen')}${renderBlock(u.viewModel, 'ViewModel')}</div>
+    <div class="blocks">${u.planned ? plannedBlock(u, 'screen', 'Screen') + plannedBlock(u, 'viewModel', 'ViewModel') : renderBlock(u.screen, 'Screen') + renderBlock(u.viewModel, 'ViewModel')}</div>
     <div class="unit-foot">${issuesBtn}${tests.join('')}${prs.join('')}${st.note ? `<div class="note">📝 ${esc(st.note)}</div>` : ''}</div>
     ${issuesPanel}
   </div>`;
+}
+
+/** Block of a planned unit: the issue(s) asking for this file and their assignees ("planned by"). */
+function plannedBlock(u, slot, kind) {
+  const issues = u.plannedIssues[slot].map((n) => D.issues.find((i) => i.n === n));
+  if (!issues.length) return `<div class="block missing">No issue for the ${kind} yet</div>`;
+  const as = [...new Set(issues.flatMap((i) => i.as))];
+  return `<div class="block">
+    <div class="kind"><span>${kind}</span><span class="pill">not in code yet</span></div>
+    <div class="fname">${issues.map((i) => `<a href="${repoUrl(`/issues/${i.n}`)}" target="_blank" rel="noopener">#${i.n}</a>`).join(', ')}</div>
+    <div class="author">${as.length ? `<span class="avatars">${as.map((a) => avatar(a)).join('')}</span><div><span class="muted small">Planned by</span><b>${as.map((a) => esc(P(a).name)).join(', ')}</b></div>` : '<span class="minus small">Nobody assigned yet</span>'}</div>
+    <div class="meta">Issue opened ${fmtDate(Math.min(...issues.map((i) => ts(i.c))))}</div></div>`;
 }
 
 /** The Screen or ViewModel half of a card. `f` is a FileInfo (see fetch-data.mjs) or null. */
