@@ -1,3 +1,5 @@
+# Builds site/data.json from FestivAR (read-only) and publishes site/ to GitHub Pages.
+# Requires Settings -> Pages -> Source = "GitHub Actions" on this repo.
 name: Build & deploy dashboard
 
 on:
