@@ -7,6 +7,30 @@
 //   GITHUB_TOKEN  optional; without it, reviews and CI status of open PRs are skipped
 //   OUT           output file (default: site/data.json)
 //   CACHE_DIR     optional; caches API responses on disk (handy for local dev)
+//
+// Output schema (site/data.json). Keys are short on purpose, to keep the file small.
+// Dates are ISO strings unless noted "unix" (seconds). Every `a`, `as`, `author`,
+// `login` field is a GitHub login and a key of `people`.
+//
+//   repo, siteRepo   "owner/name" of FestivAR and of this dashboard repo
+//   branch           FestivAR default branch (e.g. "main")
+//   generatedAt      ISO date of the run; the site uses it as "now"
+//   hasToken         false = openPRs[].review and .ci are null
+//   people           { login: { login, name, avatar, bot } }
+//   commits          [[unix, login, linesAdded, linesDeleted], ...]  (merge commits excluded)
+//   prs              [{ n, title, a, s: "open"|"closed", d: draft, c: created, m: merged, cl: closed, u: updated }]
+//   issues           [{ n, title, s, r: state_reason, c, cl, a: opener, as: [assignees], ms: milestone title, labels: [{name,color}] }]
+//   openPRs          [{ n, title, a, d, c, u, branch, reviewers: [login], review: "none"|"commented"|"changes"|"approved"|null,
+//                       ci: "success"|"failure"|"pending"|"none"|null, labels, files: [{f, s, add, del}], screens: ["feature/Key"] }]
+//   milestones       [{ title, state, due, open, closed, url, description }]
+//   units            one entry per screen, i.e. a Screen/ViewModel pair:
+//                    { feature, key, screen: FileInfo|null, viewModel: FileInfo|null, openPRs: [n], tests: { ui: [name], unit: [name] } }
+//   FileInfo         on main:     { path, lines, todos, author, created: unix, lastModified: unix, lastAuthor, commits, contributors: [{login, n}] }
+//                    only in a PR: { path, inPR: n, author, created: unix, lines, contributors }
+//
+// How screens are found: any file matching UI_RE, i.e. app/src/main/java/**/ui/<feature>/**/<Key>(Screen|ViewModel).kt.
+// <feature> is the first folder after ui/, <Key> is the shared prefix that pairs a Screen with its ViewModel
+// (CreateTaskScreen.kt + CreateTaskViewModel.kt -> unit "task/CreateTask").
 
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -18,15 +42,23 @@ const SRC = process.env.FESTIVAR_DIR || 'festivar';
 const OUT = process.env.OUT || 'site/data.json';
 const TOKEN = process.env.GITHUB_TOKEN || '';
 const CACHE = process.env.CACHE_DIR || '';
+// Captures: [1] feature folder, [2] screen key, [3] "Screen" | "ViewModel"
 const UI_RE = /^app\/src\/main\/java\/.*\/ui\/([^/]+)\/(?:.*\/)?([A-Za-z0-9]+?)(Screen|ViewModel)\.kt$/;
+// ui/ subfolders that hold shared code, not screens
 const SKIP_FEATURES = new Set(['components', 'theme']);
 // Manual identity fixes: { "git name or email": "github-login" }
 const ALIASES = fs.existsSync('aliases.json') ? JSON.parse(fs.readFileSync('aliases.json', 'utf8')) : {};
 
+/** Runs a git command inside the FestivAR clone and returns stdout. */
 const git = (...args) => execFileSync('git', ['-C', SRC, ...args], { encoding: 'utf8', maxBuffer: 1 << 28 });
 
 // ---------- GitHub API ----------
 let apiCalls = 0;
+/**
+ * GET a GitHub REST endpoint. `url` is relative to /repos/{REPO}/ unless it is absolute.
+ * With { all: true }, follows the `Link: rel="next"` header and returns every page concatenated.
+ * Responses are cached in CACHE_DIR when it is set.
+ */
 async function api(url, { all = false } = {}) {
   if (!url.startsWith('http')) url = `https://api.github.com/repos/${REPO}/${url}`;
   const out = [];
@@ -58,8 +90,11 @@ async function api(url, { all = false } = {}) {
 }
 
 // ---------- People ----------
+// Everyone is identified by GitHub login. git only knows names and emails, so resolve()
+// maps them onto logins (see its comment for the order of the rules).
 const people = {}; // login -> {login, name, avatar, bot}
 const emailToLogin = {}, nameToLogin = {};
+/** Registers (or enriches) a person and returns their login. */
 function person(login, name, avatar, bot) {
   if (!login) return null;
   const p = (people[login] ||= { login, name: name || login, avatar: avatar || `https://github.com/${login}.png?size=96`, bot: !!bot });
@@ -68,6 +103,16 @@ function person(login, name, avatar, bot) {
   return login;
 }
 function fromApiUser(u) { return u ? person(u.login, null, u.avatar_url, u.type === 'Bot') : null; }
+/**
+ * Maps a git author (name, email, commit sha) to a GitHub login, trying in order:
+ *  1. the login GitHub attached to that commit (API commit list, main branch only)
+ *  2. a GitHub noreply email (12345+login@users.noreply.github.com)
+ *  3. an email or name already seen on a resolved commit
+ *  4. aliases.json (email or name)
+ *  5. a unique known person whose first name equals this git name ("Florian" -> "Florian Chatelain")
+ *  6. otherwise a new pseudo-person named after the git name
+ * If a contributor shows up twice on the site, add their email to aliases.json.
+ */
 function resolve(name, email, sha, shaToLogin) {
   if (sha && shaToLogin[sha]) return shaToLogin[sha];
   const m = /^(?:\d+\+)?([^@]+)@users\.noreply\.github\.com$/i.exec(email || '');
@@ -162,6 +207,7 @@ async function main() {
   const units = {}; // feature/key -> unit
   const unitFor = (feature, key) => (units[`${feature}/${key}`] ||= { feature, key, screen: null, viewModel: null, openPRs: [] });
 
+  /** History of one file on main (--follow tracks renames). The oldest commit gives the initial author. */
   function fileInfo(file) {
     const out = git('log', defaultBranch, '--follow', '--format=%H%x1f%an%x1f%ae%x1f%at', '--', file).trim().split('\n').filter(Boolean)
       .map((l) => { const [sha, name, email, at] = l.split('\x1f'); return { login: resolve(name, email, sha, shaToLogin), at: +at }; });
@@ -194,6 +240,8 @@ async function main() {
       if (!pr.screens.includes(`${m[1]}/${m[2]}`)) pr.screens.push(`${m[1]}/${m[2]}`);
     }
   }
+  // Tests are matched by file name prefix: CreateTaskScreenTest, CreateTaskViewModelTest... all belong to "CreateTask".
+  // androidTest/ = UI tests, test/ = unit tests.
   for (const u of Object.values(units)) {
     const matching = testFiles.filter((t) => path.basename(t).startsWith(u.key));
     u.tests = {
