@@ -1,0 +1,5 @@
+{
+  "_help": "Manual screen statuses. Key = feature/ScreenName (as shown on the site). status: in-dev | developed | tested | finalized | frozen. 'since' (YYYY-MM-DD) is used to warn when a frozen screen is modified afterwards. Screens not listed get an automatic status.",
+  "screens": {
+  }
+}
