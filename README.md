@@ -7,7 +7,7 @@ A static dashboard for [SwEnt-FestivAR/FestivAR](https://github.com/SwEnt-Festiv
 - **This week**: what happened in a calendar week (merged PRs, closed issues, new screens, most active people, stale PRs). Use ← → to change week and **Copy as Markdown** to paste a summary in a meeting or on Discord.
 - **Screens**: Screen + ViewModel blocks grouped by feature (`ui/<feature>/`). Each block shows its initial author (the commit that created the file), dates, size, other contributors, tests, the open PRs touching it, and a status. Click **N open issues** on a card to see the open issues about that screen and who is assigned (issues are matched by title; add more with `"issues": [123]` in `status.json`). The **With open issues** filter keeps only those screens.
 - **Open PRs**: a kanban of open PRs (draft / needs review / changes requested / approved), with CI status, stale PRs (> 3 days idle), and the screens each PR touches.
-- **Code**: hotspots, i.e. the files changed most often × their size. Each one shows its main owner and a "bus factor 1" warning when one person made 80%+ of the changes.
+- **Code**: the app's navigation graph (screens by feature, arrows read from FestivAR's `*Navigator` classes, border = status; hover to highlight, click to open the screen), and hotspots, i.e. the files changed most often × their size. Each one shows its main owner and a "bus factor 1" warning when one person made 80%+ of the changes.
 - **Milestones**: progress per milestone, open issues per person, unassigned issues, and the issue list for each milestone.
 
 Each person has a **profile page** (the **Profile →** link on their card, or search for them) with an activity calendar, their open PRs, assigned issues and screens.

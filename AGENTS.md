@@ -43,6 +43,8 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
         │   ├── units.js         statuses, linked issues, planned screens (pure logic)
         │   ├── card.js          HTML of one screen card
         │   └── status-dialog.js dialog that builds a status.json entry
+        ├── code/
+        │   └── nav-graph.js     SVG of the navigation graph (hand-made layout)
         └── tabs/                one module per tab
             ├── index.js         THE TAB REGISTRY (order = nav order)
             ├── contributors.js
@@ -50,7 +52,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
             ├── screens.js
             ├── prs.js
             ├── milestones.js
-            ├── code.js          hotspots (data.hotspots, computed by fetch-data.mjs)
+            ├── code.js          navigation graph + hotspots (data.navigation, data.hotspots)
             └── person.js        profile page, hidden from the nav, route #person/<login>
 ```
 
@@ -116,6 +118,7 @@ export default {
   - developed = on main
   - tested = UI tests, plus unit tests when there is a ViewModel
   - finalized and frozen are manual only, set in `status.json`. A frozen screen shows a warning if it changes after `since` or an open PR touches it.
+- **Navigation graph**: `navigationGraph()` in `fetch-data.mjs` reads the `AppScreens` enum (nodes) and the `navigate()` / `popBackStack()` calls of `class XNavigator` files (edges). If FestivAR changes this convention, update that function. On the site, columns and rows are ordered by distance from the start screen.
 - **Issues of a screen** (`unitIssues`) = open issues whose normalized title contains the screen key, plus the numbers listed in `status.json → screens[id].issues`.
 - **Planned screens** (`plannedUnits`) are derived in the browser, in the Screens tab `setup()`, from open issue titles such as "… the X Screen/ViewModel". One is created only when no unit named X exists yet. When a PR creates the file, the real unit replaces it automatically.
 - **"Now"** is `NOW` = `data.generatedAt`, never `Date.now()`. Ages and periods are relative to the last data refresh. (Exception: the `since` date written by the status dialog is today's date.)
