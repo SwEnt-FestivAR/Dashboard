@@ -24,6 +24,14 @@ export const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 /** Lowercase letters and digits only: "Task details" and "TaskDetails" both become "taskdetails". */
 export const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
+/** Unix time of the Monday 00:00 UTC starting the week that contains t. */
+export function weekStart(t) {
+  const d = new Date(t * 1000);
+  d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return d.getTime() / 1000;
+}
+
 export const uniq = (items) => [...new Set(items)];
 
 /** { key: count } of how many times each key appears. */

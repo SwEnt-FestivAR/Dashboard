@@ -1,6 +1,6 @@
 // Contributors tab: KPIs, one card per person, and charts, filtered by period.
 
-import { $, $$, DAY, esc, fmtNum, seg, toggle, ts } from '../core/utils.js';
+import { $, $$, DAY, esc, fmtNum, seg, toggle, ts, weekStart } from '../core/utils.js';
 import { D, NOW, P, color, nameOf } from '../core/store.js';
 import { avatar, chart, clearChart, kpis, peopleBarChart } from '../core/ui.js';
 
@@ -134,14 +134,6 @@ function renderLinesChart(stats) {
       scales: { x: { stacked: true, ticks: { callback: (v) => fmtNum(Math.abs(v)) } }, y: { stacked: true, grid: { display: false } } },
     },
   });
-}
-
-/** Unix time of the Monday 00:00 UTC starting the week that contains t. */
-function weekStart(t) {
-  const d = new Date(t * 1000);
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
-  return d.getTime() / 1000;
 }
 
 /** Stacked bars of commits (or merged PRs) per week and per person. */

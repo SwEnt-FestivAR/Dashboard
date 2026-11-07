@@ -11,8 +11,9 @@
 // To add a tab, create js/tabs/<name>.js with that shape and add it to this list.
 
 import contributors from './contributors.js';
+import week from './week.js';
 import screens from './screens.js';
 import prs from './prs.js';
 import milestones from './milestones.js';
 
-export const TABS = [contributors, screens, prs, milestones];
+export const TABS = [contributors, week, screens, prs, milestones];

@@ -145,6 +145,8 @@ a.pill:hover { text-decoration: none; filter: brightness(1.1); }
 .ms.on { outline: 2px solid var(--accent); }
 .ms h3 { display: flex; justify-content: space-between; align-items: center; }
 .progress { height: 10px; background: var(--surface2); border-radius: 99px; overflow: hidden; margin: 12px 0 8px; }
+.week-title { font-size: 18px; margin-right: auto; }
+.seg button:disabled { opacity: .35; cursor: default; }
 .ms-foot { display: flex; justify-content: space-between; align-items: center; }
 .progress div { height: 100%; background: linear-gradient(90deg, var(--accent), #c084fc); border-radius: 99px; }
 .issue-list { list-style: none; margin: 0; padding: 0; max-height: 420px; overflow: auto; }
