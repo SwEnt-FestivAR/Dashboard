@@ -159,6 +159,19 @@ a.pill:hover { text-decoration: none; filter: brightness(1.1); }
 .calendar i.l4 { background: var(--accent); }
 .calendar i.future { visibility: hidden; }
 
+/* Hotspots */
+.hotspot { display: grid; grid-template-columns: 28px minmax(180px, 1.4fr) 1fr 150px minmax(160px, 1fr) 110px; align-items: center; gap: 12px; padding: 9px 4px; border-bottom: 1px solid var(--border); }
+.hotspot .rank { color: var(--muted); font-weight: 700; text-align: right; }
+.hs-file { display: flex; flex-direction: column; min-width: 0; }
+.hs-file a { font-family: ui-monospace, monospace; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; }
+.hs-score { height: 8px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+.hs-score div { height: 100%; background: linear-gradient(90deg, var(--warn), var(--bad)); border-radius: 99px; }
+.hs-owner { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+@media (max-width: 900px) {
+  .hotspot { grid-template-columns: 24px 1fr auto; }
+  .hs-score { grid-column: 2 / -1; }
+}
+
 /* Search palette */
 .search-btn { font: inherit; font-size: 13px; color: var(--muted); background: var(--surface2); border: 1px solid var(--border); border-radius: 9px; padding: 6px 10px; cursor: pointer; }
 .search-btn kbd { font: inherit; font-size: 11px; border: 1px solid var(--border); border-radius: 5px; padding: 0 5px; margin-left: 6px; }

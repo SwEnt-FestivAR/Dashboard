@@ -50,6 +50,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
             ├── screens.js
             ├── prs.js
             ├── milestones.js
+            ├── code.js          hotspots (data.hotspots, computed by fetch-data.mjs)
             └── person.js        profile page, hidden from the nav, route #person/<login>
 ```
 
