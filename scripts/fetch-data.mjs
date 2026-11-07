@@ -27,6 +27,8 @@
 //                    { feature, key, screen: FileInfo|null, viewModel: FileInfo|null, openPRs: [n], tests: { ui: [name], unit: [name] } }
 //   FileInfo         on main:     { path, lines, todos, author, created: unix, lastModified: unix, lastAuthor, commits, contributors: [{login, n}] }
 //                    only in a PR: { path, inPR: n, author, created: unix, lines, contributors }
+//   hotspots         top HOTSPOTS Kotlin files of app/src by commits × lines, most first:
+//                    [{ f: path, n: commits touching it (merges excluded), lines, authors: [{login, n}] (most first) }]
 //
 // How screens are found: any file matching UI_RE, i.e. app/src/main/java/**/ui/<feature>/**/<Key>(Screen|ViewModel).kt.
 // <feature> is the first folder after ui/, <Key> is the shared prefix that pairs a Screen with its ViewModel
@@ -44,6 +46,7 @@ const TOKEN = process.env.GITHUB_TOKEN || '';
 const CACHE = process.env.CACHE_DIR || '';
 // Captures: [1] feature folder, [2] screen key, [3] "Screen" | "ViewModel"
 const UI_RE = /^app\/src\/main\/java\/.*\/ui\/([^/]+)\/(?:.*\/)?([A-Za-z0-9]+?)(Screen|ViewModel)\.kt$/;
+const HOTSPOTS = 40; // number of hotspot files kept in data.json
 // ui/ subfolders that hold shared code, not screens
 const SKIP_FEATURES = new Set(['components', 'theme']);
 // Manual identity fixes: { "git name or email": "github-login" }
@@ -151,16 +154,22 @@ async function main() {
   // ---- git: commits with numstat
   const log = git('log', defaultBranch, '--format=%x1e%H%x1f%P%x1f%an%x1f%ae%x1f%at', '--numstat');
   const commits = [];
+  const fileChanges = {}; // path -> { n: commits touching it, authors: { login: n } }, used for hotspots
   for (const chunk of log.split('\x1e').slice(1)) {
     const [head, ...rest] = chunk.split('\n');
     const [sha, parents, name, email, at] = head.split('\x1f');
     if (parents.split(' ').length > 1) continue; // skip merge commits
+    const login = resolve(name, email, sha, shaToLogin);
     let add = 0, del = 0;
     for (const line of rest) {
-      const [a, d] = line.split('\t');
-      if (a && a !== '-' && /^\d+$/.test(a)) { add += +a; del += +d; }
+      const [a, d, file] = line.split('\t');
+      if (!file) continue;
+      if (/^\d+$/.test(a)) { add += +a; del += +d; }
+      const fc = (fileChanges[file] ||= { n: 0, authors: {} });
+      fc.n++;
+      fc.authors[login] = (fc.authors[login] || 0) + 1;
     }
-    commits.push([+at, resolve(name, email, sha, shaToLogin), add, del]);
+    commits.push([+at, login, add, del]);
   }
 
   // ---- PRs
@@ -250,11 +259,23 @@ async function main() {
     };
   }
 
+  // Hotspots: current Kotlin files ranked by (commits touching them) × (current lines). Renamed paths
+  // count only under their current name.
+  const hotspots = allFiles
+    .filter((f) => f.startsWith('app/src/') && f.endsWith('.kt') && fileChanges[f])
+    .map((f) => ({
+      f, n: fileChanges[f].n, lines: fs.readFileSync(path.join(SRC, f), 'utf8').split('\n').length,
+      authors: Object.entries(fileChanges[f].authors).sort((a, b) => b[1] - a[1]).map(([login, n]) => ({ login, n })),
+    }))
+    .sort((a, b) => b.n * b.lines - a.n * a.lines)
+    .slice(0, HOTSPOTS);
+
   const data = {
     repo: REPO, siteRepo: process.env.GITHUB_REPOSITORY || 'SwEnt-FestivAR/General-information', branch: defaultBranch, generatedAt: new Date().toISOString(), hasToken: !!TOKEN,
     people, commits, prs, issues, openPRs,
     milestones: milestones.map((m) => ({ title: m.title, state: m.state, due: m.due_on, open: m.open_issues, closed: m.closed_issues, url: m.html_url, description: m.description })),
     units: Object.values(units).sort((a, b) => a.feature.localeCompare(b.feature) || a.key.localeCompare(b.key)),
+    hotspots,
   };
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(data));
