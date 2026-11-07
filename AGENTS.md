@@ -143,7 +143,7 @@ export default {
 ## 4. Recipes
 
 **Add a tab**
-1. Create `site/js/tabs/<name>.js` exporting the tab contract (copy the shape of `prs.js`, the smallest tab).
+1. Create `site/js/tabs/<name>.js` exporting the tab contract (copy the shape of `code.js`, a small tab with controls, or `trends.js` for one that loads its own data).
 2. Import it in `site/js/tabs/index.js` and add it to `TABS` where it should appear in the nav.
 3. Nothing else: `index.html` and `main.js` build the nav and the section from the registry.
 
