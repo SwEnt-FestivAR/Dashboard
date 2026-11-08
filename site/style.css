@@ -38,7 +38,7 @@ code { background: var(--surface2); padding: 1px 5px; border-radius: 5px; }
   background: color-mix(in srgb, var(--surface) 85%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand h1 { font-size: 17px; }
-.logo { font-size: 26px; }
+.logo { width: 30px; height: 30px; flex: none; color: var(--text); }
 .tabs { display: flex; gap: 4px; background: var(--surface2); padding: 4px; border-radius: 12px; }
 .tabs a { padding: 7px 14px; border-radius: 9px; color: var(--muted); font-weight: 500; }
 .tabs a:hover { text-decoration: none; color: var(--text); }

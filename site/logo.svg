@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-52 -52 104 104">
+  <!-- Dashboard logo: 8 tapered rays around an empty center. Used as the favicon (index.html) and, through
+       <use href="logo.svg#logo">, in the top bar, where it takes the text color of the theme (currentColor). -->
+  <style>svg { color: #1b1f2a; } @media (prefers-color-scheme: dark) { svg { color: #e8eaf0; } }</style>
+  <g id="logo" fill="currentColor">
+    <!-- each ray points up, then is rotated: thin tip near the center, round end outside -->
+    <path d="M-0.9 -11 L-6.3 -42.5 A6.3 6.3 0 0 1 6.3 -42.5 L0.9 -11 Z"/>
+    <path d="M-0.9 -11 L-6.3 -42.5 A6.3 6.3 0 0 1 6.3 -42.5 L0.9 -11 Z" transform="rotate(180)"/>
+    <path d="M-0.9 -12 L-6 -36 A6 6 0 0 1 6 -36 L0.9 -12 Z" transform="rotate(90)"/>
+    <path d="M-0.9 -12 L-6 -36 A6 6 0 0 1 6 -36 L0.9 -12 Z" transform="rotate(270)"/>
+    <path d="M-0.9 -12 L-6.2 -39 A6.2 6.2 0 0 1 6.2 -39 L0.9 -12 Z" transform="rotate(45)"/>
+    <path d="M-0.9 -12 L-6.2 -39 A6.2 6.2 0 0 1 6.2 -39 L0.9 -12 Z" transform="rotate(135)"/>
+    <path d="M-0.9 -12 L-6.2 -39 A6.2 6.2 0 0 1 6.2 -39 L0.9 -12 Z" transform="rotate(225)"/>
+    <path d="M-0.9 -12 L-6.2 -39 A6.2 6.2 0 0 1 6.2 -39 L0.9 -12 Z" transform="rotate(315)"/>
+  </g>
+</svg>

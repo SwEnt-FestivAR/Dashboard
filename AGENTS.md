@@ -39,6 +39,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
 └── site/                        everything that gets published
     ├── index.html               shell only: top bar, empty <nav>, empty <main>, script tags
     ├── style.css                all styles, theme tokens on :root
+    ├── logo.svg                 logo: favicon, and top-bar icon through <use href="logo.svg#logo"> (takes the theme text color)
     └── js/
         ├── main.js              entry: load JSON, build nav + sections from the registry, hash routing, theme
         ├── search.js            global Ctrl+K search palette
