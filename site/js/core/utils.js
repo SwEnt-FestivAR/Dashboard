@@ -23,8 +23,8 @@ export const fmtShortDate = (t) => new Date(t * 1000).toLocaleDateString('en-GB'
 /** Sum of value(item) over the items. */
 export const sumBy = (items, value) => items.reduce((total, item) => total + value(item), 0);
 
-/** "3 issues", "1 issue". */
-export const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+/** "3 issues", "1 issue"; `many` overrides the plural form ("branches"). */
+export const plural = (n, word, many = `${word}s`) => `${n} ${n === 1 ? word : many}`;
 
 /** Lowercase letters and digits only: "Task details" and "TaskDetails" both become "taskdetails". */
 export const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');

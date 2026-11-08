@@ -41,7 +41,7 @@ async function render() {
   if (!history.length) return;
 
   const since = `since ${fmtDate(ts(history[0].d))}`;
-  const done = (h) => h.screens.finalized + h.screens.frozen;
+  const done = (h) => h.screens.finalized || 0;
   $('#trendsKpis').innerHTML = kpis([
     ['Open PRs', history.at(-1).prsOpen, `${delta('prsOpen')} ${since}`],
     ['Open issues', history.at(-1).issuesOpen, `${delta('issuesOpen')} ${since}`],

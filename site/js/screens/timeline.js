@@ -1,7 +1,7 @@
 // Gantt-style timeline of screens: one row per screen, from its first issue to today.
 //   grey segment  = planned (first issue → first file created)
 //   color segment = in the code, colored by current status (file created → finalized date, or today)
-//   dots          = first issue ◦, file created ●, finalized/frozen ◆ (the `since` date of status.json)
+//   dots          = first issue ◦, file created ●, finalized ◆ (the `since` date of status.json)
 
 import { DAY, esc, fmtDate, fmtShortDate, ts } from '../core/utils.js';
 import { NOW, STATUS } from '../core/store.js';
@@ -12,7 +12,7 @@ function milestones(u) {
   const issueDates = unitIssues(u, true).map((i) => ts(i.c));
   const fileDates = [u.screen, u.viewModel].filter(Boolean).map((f) => f.created);
   const st = unitStatus(u);
-  const done = ['finalized', 'frozen'].includes(st.status) ? ts(STATUS.screens[unitId(u)]?.since) : null;
+  const done = st.status === 'finalized' ? ts(STATUS.screens[unitId(u)]?.since) : null;
   return {
     issue: issueDates.length ? Math.min(...issueDates) : null,
     created: fileDates.length ? Math.min(...fileDates) : null,

@@ -130,10 +130,11 @@ export default {
 - **Tests** are linked by file name prefix (`CreateTask*Test.kt`): `androidTest/` = UI tests, `test/` = unit tests.
 - **Statuses** (`STATUSES` in `screens/units.js`, in progress order):
   - planned = only named in an open issue
-  - in-dev = not on main: only in an open PR or a branch
-  - developed = on main
-  - tested = UI tests, plus unit tests when there is a ViewModel
-  - finalized and frozen are manual only, set in `status.json`. A frozen screen shows a warning if it changes after `since` or an open PR touches it.
+  - in-dev = Screen or ViewModel missing on main, OR an open issue about it (`unitIssues`), OR any branch / open PR touching its files, even files already on main (`inDevReasons` lists which; the card shows them on hover)
+  - developed = Screen and ViewModel on main, no open issue, no branch or PR touching it
+  - finalized = manual only, set in `status.json` (with `since`, the date shown on the timeline)
+
+  These rules were chosen by the team; tests are shown on the cards but don't affect the status.
 - **Hotspots** (`hotspots()` in `scripts/lib/repo.mjs`): score out of 100 = 50% usages + 30% heat + 20% lines, where each criterion is a mid-rank percentile among production files (`app/src/main`). Usages = other production files mentioning the file's class name; heat = recency-weighted activity (each change halved every 14 days, weighted by log of lines changed). The priority order (usages > activity > size) was chosen by the team: change `WEIGHTS` there if it changes, and update the explanation text in `tabs/code.js` and the README.
 - **Navigation graph**: `navigationGraph()` in `scripts/lib/repo.mjs` reads the `AppScreens` enum (nodes) and the `navigate()` / `popBackStack()` calls of `class XNavigator` files (edges). If FestivAR changes this convention, update that function. On the site, columns and rows are ordered by distance from the start screen.
 - **Solved issues** (`isCompleted` in `core/store.js`): closed as completed. Issues closed as "not planned" never count as solved (Contributors, This week, Profile).

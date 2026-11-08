@@ -1,21 +1,19 @@
 // Screen "units" (a Screen + ViewModel pair, see the schema in scripts/fetch-data.mjs): statuses,
 // linked issues and planned screens. Pure logic, no HTML except the status bar.
 
-import { DAY, norm, ts } from '../core/utils.js';
+import { norm, plural } from '../core/utils.js';
 import { D, STATUS, assigneesOf } from '../core/store.js';
 
 /**
  * Screen statuses, in progress order. `css` names the color variable in style.css (:root).
- * planned / in-dev / developed / tested are computed by autoStatus(); finalized / frozen only come from
- * status.json. To add a status, add it here and its --s-* color in style.css.
+ * planned / in-dev / developed are computed by autoStatus(); finalized is only set by hand in status.json.
+ * To add a status, add it here and its --s-* color in style.css.
  */
 export const STATUSES = [
   { id: 'planned', label: 'Planned', css: '--s-planned', desc: 'Not in the code yet, only mentioned in an open issue' },
-  { id: 'in-dev', label: 'In development', css: '--s-indev', desc: 'Not on main yet: only in an open PR or a branch' },
-  { id: 'developed', label: 'Developed', css: '--s-developed', desc: 'Merged on main' },
-  { id: 'tested', label: 'Tested', css: '--s-tested', desc: 'Merged, with UI tests (and ViewModel unit tests)' },
-  { id: 'finalized', label: 'Finalized', css: '--s-finalized', desc: 'Done, only small fixes expected' },
-  { id: 'frozen', label: 'Frozen', css: '--s-frozen', desc: 'Finalized and must not be touched anymore' },
+  { id: 'in-dev', label: 'In development', css: '--s-indev', desc: 'Screen or ViewModel missing on main, open issues, or a branch / PR touching it' },
+  { id: 'developed', label: 'Developed', css: '--s-developed', desc: 'Screen and ViewModel on main, no open issue, no branch or PR touching it' },
+  { id: 'finalized', label: 'Finalized', css: '--s-finalized', desc: 'Done and validated by the team (set by hand in status.json)' },
 ];
 export const statusInfo = (id) => STATUSES.find((s) => s.id === id);
 
@@ -24,26 +22,31 @@ export const unitId = (u) => `${u.feature}/${u.key}`;
 
 const onMain = (file) => file && !file.inPR && !file.inBranch;
 
-/** Status deduced from code and issues: planned < in-dev (only in a PR or a branch) < developed (on main) < tested. */
-function autoStatus(u) {
-  if (u.planned) return 'planned';
-  if (!onMain(u.screen) && !onMain(u.viewModel)) return 'in-dev';
-  if (u.tests.ui.length && (!onMain(u.viewModel) || u.tests.unit.length)) return 'tested';
-  return 'developed';
+/**
+ * Why a screen is still in development (empty when it is not): Screen or ViewModel missing on main, open
+ * issues about it, or unmerged work on it in a branch or an open PR (even on files that are already on main).
+ */
+export function inDevReasons(u) {
+  const issues = unitIssues(u).length, branches = u.branches.length + u.openPRs.length;
+  return [
+    !onMain(u.screen) && 'Screen not on main',
+    !onMain(u.viewModel) && 'ViewModel not on main',
+    issues && plural(issues, 'open issue'),
+    branches && `${plural(branches, 'branch or PR', 'branches or PRs')} touching it`,
+  ].filter(Boolean);
 }
 
-/**
- * Effective status: a valid status.json entry wins over autoStatus().
- * frozenBroken = frozen, but an open PR or a branch touches it, or a file changed more than a day after `since`.
- */
+/** Status deduced from code and issues: planned (issues only) < in-dev (see inDevReasons) < developed. */
+function autoStatus(u) {
+  if (u.planned) return 'planned';
+  return inDevReasons(u).length ? 'in-dev' : 'developed';
+}
+
+/** Effective status: a valid status.json entry (in practice "finalized") wins over autoStatus(). */
 export function unitStatus(u) {
   const manual = STATUS.screens[unitId(u)];
-  const status = statusInfo(manual?.status) ? manual.status : autoStatus(u);
-  const lastChange = Math.max(u.screen?.lastModified || 0, u.viewModel?.lastModified || 0);
-  const frozenSince = ts(manual?.since);
-  const touchedElsewhere = u.openPRs.length > 0 || u.branches?.length > 0;
-  const frozenBroken = status === 'frozen' && (touchedElsewhere || (frozenSince && lastChange > frozenSince + DAY));
-  return { status, manual: Boolean(statusInfo(manual?.status)), note: manual?.note, frozenBroken };
+  const isManual = Boolean(statusInfo(manual?.status));
+  return { status: isManual ? manual.status : autoStatus(u), manual: isManual, note: manual?.note };
 }
 
 /**
@@ -85,7 +88,7 @@ export function plannedUnits(units, issues) {
     found[k] ||= {
       feature: words.map((w) => w.toLowerCase().replace(/s$/, '')).find((w) => features.has(w)) || 'other',
       key: words.map((w) => w[0].toUpperCase() + w.slice(1)).join(''),
-      planned: true, screen: null, viewModel: null, openPRs: [],
+      planned: true, screen: null, viewModel: null, openPRs: [], branches: [],
       tests: { ui: [], unit: [] }, plannedIssues: { screen: [], viewModel: [] },
     };
     found[k].plannedIssues[/^screen$/i.test(m[2]) ? 'screen' : 'viewModel'].push(issue.n);

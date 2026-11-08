@@ -21,23 +21,23 @@ Press **Ctrl+K** (or **/**, or click **Search**) anywhere to search screens, peo
 | Status | Meaning | Source |
 |---|---|---|
 | Planned | not in the code yet, only named in an open issue ("Implement the My tasks Screen") | auto |
-| In development | not on `main` yet: only in an open PR or in any branch of the repo | auto |
-| Developed | merged on `main` | auto |
-| Tested | merged, has UI tests (+ ViewModel unit tests) | auto |
-| Finalized | done, only small fixes expected | manual |
-| Frozen | finalized, must not be touched anymore | manual |
+| In development | the Screen or the ViewModel is not on `main` yet, **or** an open issue is about it, **or** any branch / open PR touches its files | auto |
+| Developed | Screen and ViewModel on `main`, no open issue about it, no branch or PR touching it | auto |
+| Finalized | done and validated by the team | manual |
 
-Manual statuses go in [`status.json`](status.json). On the site, click a status badge to get the entry, then paste it into the file:
+Hover the status badge of a card to see why a screen is still in development (e.g. "2 open issues, 3 branches or PRs touching it").
+
+**Finalized** is the only status set by hand, in [`status.json`](status.json). On the site, click a status badge to get the entry, then paste it into the file:
 
 ```json
 {
   "screens": {
-    "task/CreateTask": { "status": "frozen", "since": "2026-11-07", "note": "validated in demo" }
+    "task/CreateTask": { "status": "finalized", "since": "2026-11-07", "note": "validated in demo" }
   }
 }
 ```
 
-If a frozen screen is modified after `since`, or touched by an open PR or a branch, its card shows **⚠ touched while frozen**.
+`since` is the finalization date, shown on the timeline.
 
 ## Deployment
 

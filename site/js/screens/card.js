@@ -4,20 +4,20 @@
 import { esc, fmtDate, plural, ts } from '../core/utils.js';
 import { D, P, ago, assigneesOf, nameOf, repoUrl } from '../core/store.js';
 import { avatar, avatars, extLink, issueRow } from '../core/ui.js';
-import { statusInfo, unitId, unitIssues, unitStatus } from './units.js';
+import { inDevReasons, statusInfo, unitId, unitIssues, unitStatus } from './units.js';
 
 /** `expanded` = the open-issues list is shown. Buttons carry data-id for the click handlers of the tab. */
 export function screenCard(u, expanded) {
   const st = unitStatus(u);
   const info = statusInfo(st.status);
   const issues = unitIssues(u);
+  const why = st.status === 'in-dev' ? ` (${inDevReasons(u).join(', ')})` : '';
   const blocks = u.planned
     ? plannedBlock(u, 'screen', 'Screen') + plannedBlock(u, 'viewModel', 'ViewModel')
     : fileBlock(u.screen, 'Screen') + fileBlock(u.viewModel, 'ViewModel');
   return `<div class="unit" style="--sc:var(${info.css})">
     <div class="unit-head"><h4>${esc(u.key)}</h4>
-      ${st.frozenBroken ? '<span class="pill bad" title="Frozen but modified after the freeze date or touched by an open PR">⚠ touched while frozen</span>' : ''}
-      <button class="status-btn" data-id="${esc(unitId(u))}" title="${esc(info.desc)} — click to change">${info.label} <small>· ${st.manual ? 'manual' : 'auto'}</small></button>
+      <button class="status-btn" data-id="${esc(unitId(u))}" title="${esc(info.desc)}${why} — click to change">${info.label} <small>· ${st.manual ? 'manual' : 'auto'}</small></button>
     </div>
     <div class="blocks">${blocks}</div>
     <div class="unit-foot">

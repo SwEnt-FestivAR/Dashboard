@@ -75,7 +75,7 @@ function render(query = '') {
 function renderSummary() {
   const all = D.units;
   const count = (id) => all.filter((u) => unitStatus(u).status === id).length;
-  const done = count('finalized') + count('frozen');
+  const done = count('finalized');
   $('#statusSummary').innerHTML = `
     <div class="card-head flush"><h3>${plural(all.length, 'screen')} · ${Math.round((100 * done) / all.length)}% finalized</h3>
       <span class="muted small">Auto status from code, PRs &amp; issues, overridden by
