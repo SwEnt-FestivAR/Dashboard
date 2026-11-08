@@ -45,12 +45,14 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
         ├── core/                shared, tab-agnostic code
         │   ├── utils.js         generic helpers (DOM, escaping, dates, numbers, sets). Knows nothing about the data
         │   ├── store.js         the loaded data (D, STATUS, NOW) + data-aware helpers (people, links, ago)
-        │   └── ui.js            reusable HTML pieces (avatar, kpis, issueRow…) + chart helpers
+        │   └── ui.js            reusable HTML pieces (avatar, kpis, issueRow, listItems…) + chart helpers
         ├── screens/             domain code of the Screens tab
         │   ├── units.js         statuses, linked issues, planned screens (pure logic)
         │   ├── card.js          HTML of one screen card
         │   ├── timeline.js      Gantt view of the screens (Cards / Timeline toggle)
         │   └── status-dialog.js dialog that builds a status.json entry
+        ├── week/
+        │   └── issues.js        This week: issues per person, unassigned user stories / tasks (+ their Markdown)
         ├── reviews/
         │   └── stats.js         review / cycle time / PR size statistics, peer approvals (pure logic)
         ├── code/
@@ -75,7 +77,7 @@ Generated, git-ignored, **never committed**: `site/data.json`, `site/status.json
 ### Dependency direction
 
 ```
-main.js ──> tabs/index.js ──> tabs/*.js ──> screens/*.js, code/*.js, reviews/*.js ──> core/ui.js ──> core/store.js ──> core/utils.js
+main.js ──> tabs/index.js ──> tabs/*.js ──> screens/*.js, code/*.js, reviews/*.js, week/*.js ──> core/ui.js ──> core/store.js ──> core/utils.js
 ```
 
 - Imports only go **left to right** (downwards).
@@ -134,6 +136,7 @@ export default {
   - finalized and frozen are manual only, set in `status.json`. A frozen screen shows a warning if it changes after `since` or an open PR touches it.
 - **Hotspots** (`hotspots()` in `scripts/lib/repo.mjs`): score = heat × log2(1 + complexity). heat = recency-weighted activity (each change halved every 14 days, weighted by log of lines changed); complexity = sum of indentation levels of code lines. Change the half-life or the formula there, and update the explanation text in `tabs/code.js`.
 - **Navigation graph**: `navigationGraph()` in `scripts/lib/repo.mjs` reads the `AppScreens` enum (nodes) and the `navigate()` / `popBackStack()` calls of `class XNavigator` files (edges). If FestivAR changes this convention, update that function. On the site, columns and rows are ordered by distance from the start screen.
+- **User stories vs tasks** (`isUserStory` in `week/issues.js`): an issue is a user story if it has the "user story" label or a title starting with `US-<number>`; every other issue is a task.
 - **Issues of a screen** (`unitIssues`) = open issues whose normalized title contains the screen key, plus the numbers listed in `status.json → screens[id].issues`.
 - **Planned screens** (`plannedUnits`) are derived in the browser, in the Screens tab `setup()`, from open issue titles such as "… the X Screen/ViewModel". One is created only when no unit named X exists yet. When a PR creates the file, the real unit replaces it automatically.
 - **Site modules shared with Node**: `scripts/snapshot.mjs` imports `site/js/core/store.js` and `site/js/screens/units.js`, so the history uses exactly the same status rules as the Screens tab. Keep those two modules (and what they import) free of DOM access at import time: touch `document` only inside functions.

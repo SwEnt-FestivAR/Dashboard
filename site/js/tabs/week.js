@@ -1,9 +1,11 @@
 // This week tab: what happened in one week (Friday 12:00 → next Friday 12:00, see WEEK_START in utils.js),
-// with ← → navigation and a "Copy as Markdown" summary for meetings or Discord.
+// each person's issues and the unassigned ones (week/issues.js), with ← → navigation and a
+// "Copy as Markdown" summary for meetings or Discord.
 
 import { $, $$, DAY, addWeeks, countBy, esc, fmtWeekDay, plural, ts, weekStart } from '../core/utils.js';
 import { D, NOW, P, nameOf, repoUrl } from '../core/store.js';
 import { avatar, extLink, issueRow, kpis, listItems } from '../core/ui.js';
+import { issuesByPerson, issuesMarkdown, peopleIssuesHtml, unassignedHtml, unassignedIssues } from '../week/issues.js';
 
 const STALE_DAYS = 3;
 const state = { offset: 0 }; // 0 = week containing NOW, 1 = the week before, …
@@ -21,7 +23,11 @@ const html = `
     <div class="card"><div class="card-head"><h3>New screens</h3></div><ul class="issue-list" id="weekScreens"></ul></div>
     <div class="card"><div class="card-head"><h3>Most active</h3><span class="muted small">commits this week</span></div><ul class="issue-list" id="weekPeople"></ul></div>
   </div>
-  <div class="card" id="weekStaleCard"><div class="card-head"><h3>Stale open PRs</h3><span class="muted small">no activity for ${STALE_DAYS}+ days</span></div><ul class="issue-list" id="weekStale"></ul></div>`;
+  <div class="card" id="weekStaleCard"><div class="card-head"><h3>Stale open PRs</h3><span class="muted small">no activity for ${STALE_DAYS}+ days</span></div><ul class="issue-list" id="weekStale"></ul></div>
+  <div class="card"><div class="card-head"><h3>Issues per person</h3><span class="muted small">assigned now · closed during this week</span></div>
+    <div class="people-issues" id="weekPeopleIssues"></div></div>
+  <div class="card"><div class="card-head"><h3>Unassigned open issues</h3><span class="muted small">right now, oldest first</span></div>
+    <div class="grid2" id="weekUnassigned"></div></div>`;
 
 function setup() {
   for (const b of $$('#weekNav button')) {
@@ -53,6 +59,8 @@ function weekData() {
     newScreens: D.units.filter((u) => !u.planned && inWeek(created(u))),
     commits: Object.entries(countBy(D.commits.filter((c) => inWeek(c.t)).map((c) => c.a))).sort((a, b) => b[1] - a[1]),
     stale: D.openPRs.filter((p) => NOW - ts(p.u) > STALE_DAYS * DAY),
+    people: issuesByPerson(from, to),
+    unassigned: unassignedIssues(),
   };
 }
 
@@ -75,6 +83,8 @@ function render() {
   $('#weekPeople').innerHTML = listItems(w.commits, ([l, n]) => `<li>${avatar(l, 'sm')}<span class="title">${nameOf(l)}</span><b>${plural(n, 'commit')}</b></li>`, 'No commit');
   $('#weekStaleCard').hidden = !w.current; // "stale" only makes sense for the current week
   $('#weekStale').innerHTML = listItems(w.stale, prRow, 'No stale PR 🎉');
+  $('#weekPeopleIssues').innerHTML = peopleIssuesHtml(w.people);
+  $('#weekUnassigned').innerHTML = unassignedHtml(w.unassigned);
 }
 
 /** Plain-text summary of the week, ready to paste. */
@@ -83,7 +93,7 @@ function markdown(w) {
   const pr = (p) => `- #${p.n} ${p.title} (@${p.a})`;
   return `## FestivAR — ${fmtWeekDay(w.from)} → ${fmtWeekDay(w.to)}
 **${plural(w.merged.length, 'PR')} merged · ${plural(w.closed.length, 'issue')} closed · ${plural(w.newScreens.length, 'new screen')}**
-${section('Merged PRs', w.merged, pr)}${section('Closed issues', w.closed, (i) => `- #${i.n} ${i.title}${i.as.length ? ` (${i.as.map((a) => `@${a}`).join(', ')})` : ''}`)}${section('New screens', w.newScreens, (u) => `- ${u.key} (${u.feature})`)}${section('Most active', w.commits, ([l, n]) => `- ${P(l).name}: ${plural(n, 'commit')}`)}${w.current ? section('Stale open PRs', w.stale, pr) : ''}`;
+${section('Merged PRs', w.merged, pr)}${section('Closed issues', w.closed, (i) => `- #${i.n} ${i.title}${i.as.length ? ` (${i.as.map((a) => `@${a}`).join(', ')})` : ''}`)}${section('New screens', w.newScreens, (u) => `- ${u.key} (${u.feature})`)}${section('Most active', w.commits, ([l, n]) => `- ${P(l).name}: ${plural(n, 'commit')}`)}${w.current ? section('Stale open PRs', w.stale, pr) : ''}${issuesMarkdown(w.people, w.unassigned)}`;
 }
 
 export default { id: 'week', label: 'This week', html, setup, render };

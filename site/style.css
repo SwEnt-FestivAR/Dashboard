@@ -225,6 +225,14 @@ dialog.search input { width: 100%; border: 0; border-bottom: 1px solid var(--bor
 .search-results .title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .search-icon { width: 20px; text-align: center; }
 .search-hint { padding: 8px 18px; border-top: 1px solid var(--border); }
+/* This week: issues per person */
+.people-issues { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+.pi-person { border: 1px solid var(--border); border-radius: 12px; padding: 12px; min-width: 0; }
+.pi-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.pi-head b { margin-right: auto; }
+.pi-person h4, #weekUnassigned h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 10px 0 2px; }
+.pi-person .issue-list { max-height: 220px; }
+@media (max-width: 520px) { .people-issues { grid-template-columns: 1fr; } }
 .week-title { font-size: 18px; margin-right: auto; }
 .seg button:disabled { opacity: .35; cursor: default; }
 .ms-foot { display: flex; justify-content: space-between; align-items: center; }
