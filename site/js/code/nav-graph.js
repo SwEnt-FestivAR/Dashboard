@@ -68,7 +68,8 @@ export function navGraphSvg(showAll) {
   const shown = edges.filter((e) => pos[e.from] && pos[e.to] && (showAll || (e.kind === 'go' && e.to !== screens[0])));
 
   const heads = cols.map(([f], c) => `<text class="ng-head" x="${PAD + c * (NODE_W + COL_GAP) + NODE_W / 2}" y="${PAD}">${esc(f)}</text>`);
-  const lines = shown.map((e) => `<path class="ng-edge ${e.kind}" data-from="${esc(e.from)}" data-to="${esc(e.to)}" d="${edgePath(pos[e.from], pos[e.to])}" marker-end="url(#ng-arrow)"/>`);
+  const lines = shown.map((e) => `<path class="ng-edge ${e.kind}" data-from="${esc(e.from)}" data-to="${esc(e.to)}"
+    d="${edgePath(pos[e.from], pos[e.to])}" marker-end="url(#ng-arrow)"/>`);
   const nodes = Object.entries(pos).map(([s, p]) => {
     const unit = D.units.find((u) => u.key === s);
     const color = unit ? `var(${statusInfo(unitStatus(unit).status).css})` : 'var(--border)';

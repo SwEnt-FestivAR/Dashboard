@@ -81,7 +81,8 @@ function renderSummary() {
       <span class="muted small">Auto status from code, PRs &amp; issues, overridden by
         <a href="${esc(statusFileUrl())}" target="_blank" rel="noopener">status.json</a>. Click a badge to change it.</span></div>
     <div class="bar">${statusBar(all)}</div>
-    <div class="legend">${STATUSES.map((s) => `<span title="${esc(s.desc)}"><i class="dot" style="background:var(${s.css})"></i>${s.label} <b>${count(s.id)}</b></span>`).join('')}</div>`;
+    <div class="legend">${STATUSES.map((s) => `<span title="${esc(s.desc)}">
+      <i class="dot" style="background:var(${s.css})"></i>${s.label} <b>${count(s.id)}</b></span>`).join('')}</div>`;
 }
 
 /** A feature heading (progress, contributors, bus factor) followed by the cards of `units`. */
@@ -89,13 +90,16 @@ function featureSection(feature, units) {
   const featureUnits = D.units.filter((u) => u.feature === feature);
   const commits = {};
   for (const u of featureUnits) {
-    for (const c of [u.screen, u.viewModel].flatMap((f) => f?.contributors || [])) commits[c.login] = (commits[c.login] || 0) + c.n;
+    for (const c of [u.screen, u.viewModel].flatMap((f) => f?.contributors || [])) {
+      commits[c.login] = (commits[c.login] || 0) + c.n;
+    }
   }
   const people = Object.entries(commits).sort((a, b) => b[1] - a[1]);
+  const peopleAvatars = people.map(([login, n]) => avatar(login, 'sm', `${plural(n, 'commit')} · `)).join('');
   return `<div class="feature">
     <div class="feature-head"><h2>${esc(feature)}</h2><span class="pill">${plural(featureUnits.length, 'screen')}</span>
       <div class="mini">${statusBar(featureUnits)}</div>
-      <span class="muted small">Contributors</span><span class="avatars">${people.map(([l, n]) => avatar(l, 'sm', `${plural(n, 'commit')} · `)).join('')}</span>
+      <span class="muted small">Contributors</span><span class="avatars">${peopleAvatars}</span>
       ${people.length === 1 ? '<span class="pill warn" title="Only one person ever touched this feature">bus factor 1</span>' : ''}
     </div>
     <div class="units">${units.map((u) => screenCard(u, state.expanded.has(unitId(u)))).join('')}</div>

@@ -3,7 +3,7 @@
 
 import { $, $$, countBy, esc, fmtDate, seg, ts } from '../core/utils.js';
 import { D, NOW } from '../core/store.js';
-import { issueRow, listItems, peopleBarChart } from '../core/ui.js';
+import { chartCard, issueRow, listItems, peopleBarChart } from '../core/ui.js';
 
 const state = {
   selected: null,     // title of the selected milestone
@@ -13,10 +13,7 @@ const state = {
 const html = `
   <div class="milestones" id="milestoneCards"></div>
   <div class="grid2">
-    <div class="card">
-      <div class="card-head"><h3>Open issues per person</h3><span class="muted small">current load</span></div>
-      <div class="chart-box"><canvas id="loadChart"></canvas></div>
-    </div>
+    ${chartCard('Open issues per person', 'loadChart', 'current load')}
     <div class="card">
       <div class="card-head"><h3>Unassigned open issues</h3><span id="unassignedCount" class="pill"></span></div>
       <ul class="issue-list" id="unassigned"></ul>

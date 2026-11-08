@@ -15,6 +15,7 @@ export const STATUSES = [
   { id: 'developed', label: 'Developed', css: '--s-developed', desc: 'Screen and ViewModel on main, no open issue, no branch or PR touching it' },
   { id: 'finalized', label: 'Finalized', css: '--s-finalized', desc: 'Done and validated by the team (set by hand in status.json)' },
 ];
+/** The STATUSES entry of a status id (undefined for an unknown id). */
 export const statusInfo = (id) => STATUSES.find((s) => s.id === id);
 
 /** A unit's id, e.g. "task/CreateTask". It is also its key in status.json. */

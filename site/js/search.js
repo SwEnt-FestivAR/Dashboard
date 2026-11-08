@@ -27,8 +27,12 @@ function buildIndex() {
     if (p.s === 'open') return 'Open PR';
     return p.m ? 'Merged PR' : 'Closed PR';
   };
-  const prs = D.prs.map((p) => ({ kind: prKind(p), label: p.title, sub: `#${p.n} · ${P(p.a).name}`, href: repoUrl(`/pull/${p.n}`), icon: '⇄' }));
-  const issues = D.issues.map((i) => ({ kind: i.s === 'open' ? 'Open issue' : 'Closed issue', label: i.title, sub: `#${i.n}`, href: repoUrl(`/issues/${i.n}`), icon: '◎' }));
+  const prs = D.prs.map((p) => ({
+    kind: prKind(p), label: p.title, sub: `#${p.n} · ${P(p.a).name}`, href: repoUrl(`/pull/${p.n}`), icon: '⇄',
+  }));
+  const issues = D.issues.map((i) => ({
+    kind: i.s === 'open' ? 'Open issue' : 'Closed issue', label: i.title, sub: `#${i.n}`, href: repoUrl(`/issues/${i.n}`), icon: '◎',
+  }));
   return [...screens, ...people, ...prs, ...issues].map((it) => ({ ...it, text: norm(`${it.label} ${it.sub}`) }));
 }
 

@@ -55,7 +55,8 @@ export function timelineHtml(units) {
       </div></div>`;
   }).join('');
   return `<div class="card timeline">
-    <div class="tl-row tl-axis"><span class="tl-name"></span><div class="tl-track">${axis}<em class="tl-today" style="left:${x(NOW)}">today</em></div></div>
+    <div class="tl-row tl-axis"><span class="tl-name"></span>
+      <div class="tl-track">${axis}<em class="tl-today" style="left:${x(NOW)}">today</em></div></div>
     ${body}
     <p class="muted small tl-legend">◦ first issue · ● file created · ◆ finalized — grey = planned, color = in the code (current status)</p>
   </div>`;

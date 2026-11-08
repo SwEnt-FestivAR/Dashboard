@@ -1,8 +1,8 @@
 // Contributors tab: KPIs, one card per person, and charts, filtered by period.
 
-import { $, $$, DAY, addWeeks, esc, fmtNum, fmtShortDate, seg, sumBy, toggle, ts, weekStart } from '../core/utils.js';
+import { $, $$, DAY, addWeeks, css, esc, fmtNum, fmtShortDate, seg, sumBy, toggle, ts, weekStart } from '../core/utils.js';
 import { D, NOW, P, color, isCompleted, nameOf } from '../core/store.js';
-import { avatar, chart, clearChart, kpis, linesHtml, peopleBarChart } from '../core/ui.js';
+import { avatar, chart, chartCard, chartOptions, clearChart, kpis, linesHtml, peopleBarChart } from '../core/ui.js';
 
 const state = {
   days: 0,              // period filter, 0 = all time
@@ -32,10 +32,7 @@ const html = `
       </div>
       <div class="chart-box"><canvas id="barChart"></canvas></div>
     </div>
-    <div class="card">
-      <div class="card-head"><h3>Lines added / deleted</h3><span class="muted small">merge commits excluded</span></div>
-      <div class="chart-box"><canvas id="locChart"></canvas></div>
-    </div>
+    ${chartCard('Lines added / deleted', 'locChart', 'merge commits excluded')}
   </div>
   <div class="card">
     <div class="card-head"><h3>Activity over time</h3>
@@ -117,8 +114,10 @@ function render() {
 function personCard(s, rank) {
   const dim = state.focus.size && !state.focus.has(s.login) ? 'dim' : '';
   const stat = (n, label) => `<div><b>${n}</b><span>${label}</span></div>`;
-  return `<div class="person ${dim}" style="--c:${color(s.login)}" data-login="${esc(s.login)}" title="Click to focus the charts on this person">
-    <div class="who">${avatar(s.login)}<div><b>${nameOf(s.login)}</b><span class="muted small">@${esc(s.login)}</span></div><span class="rank">#${rank + 1}</span></div>
+  const who = `<div><b>${nameOf(s.login)}</b><span class="muted small">@${esc(s.login)}</span></div>`;
+  return `<div class="person ${dim}" style="--c:${color(s.login)}" data-login="${esc(s.login)}"
+      title="Click to focus the charts on this person">
+    <div class="who">${avatar(s.login)}${who}<span class="rank">#${rank + 1}</span></div>
     <div class="stats">${stat(s.commits, 'commits')}${stat(s.merged, 'merged')}${stat(s.open, 'open PRs')}${stat(s.issues, 'issues')}</div>
     <div class="loc">${linesHtml(s.add, s.del)}<a href="#person/${encodeURIComponent(s.login)}">Profile →</a></div>
   </div>`;
@@ -131,7 +130,7 @@ function renderLinesChart(stats) {
     type: 'bar',
     data: {
       labels: stats.map((s) => P(s.login).name),
-      datasets: [bar('Added', stats.map((s) => s.add), '#10b981'), bar('Deleted', stats.map((s) => -s.del), '#f43f5e')],
+      datasets: [bar('Added', stats.map((s) => s.add), css('--ok')), bar('Deleted', stats.map((s) => -s.del), css('--bad'))],
     },
     options: {
       indexAxis: 'y', maintainAspectRatio: false,
@@ -155,23 +154,17 @@ function renderWeeklyChart(logins) {
   const series = Object.fromEntries(logins.map((l) => [l, weeks.map(() => 0)]));
   for (const [t, a] of events) if (series[a]) series[a][index.get(weekStart(t))]++;
 
+  // Tooltip: busiest people first, people with 0 hidden
+  const tooltip = { itemSort: (a, b) => b.raw - a.raw, filter: (item) => item.raw > 0 };
+  const options = chartOptions({ legend: true, stacked: true, tooltip });
+  options.scales.x.title = { display: true, text: 'Week starting Friday 12:00' };
   chart('timeChart', {
     type: 'bar',
     data: {
-      labels: weeks.map((w) => fmtShortDate(w)),
+      labels: weeks.map(fmtShortDate),
       datasets: logins.map((l) => ({ label: P(l).name, data: series[l], backgroundColor: color(l), borderRadius: 3 })),
     },
-    options: {
-      maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } },
-        tooltip: { itemSort: (a, b) => b.raw - a.raw, filter: (item) => item.raw > 0 },
-      },
-      scales: {
-        x: { stacked: true, grid: { display: false }, title: { display: true, text: 'Week starting Friday 12:00' } },
-        y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } },
-      },
-    },
+    options,
   });
 }
 

@@ -66,9 +66,10 @@ function hotspotRow(h, rank) {
     <div class="hs-file">${extLink(repoUrl(`/blob/${D.branch}/${h.f}`), esc(h.f.split('/').pop()))}
       <span class="muted small">${esc(dir)}${isTest(h.f) ? ' · test' : ''}</span></div>
     <div class="hs-score" title="Score out of 100"><b>${h.score}</b><div class="hs-bar"><div style="width:${h.score}%"></div></div></div>
-    <span class="hs-metrics muted small" title="${plural(h.n, 'commit')} in total">used by ${plural(h.uses, 'file')} · activity ${h.heat} · ${h.lines} lines<br>
-      last change ${ago(h.last)}</span>
-    <span class="hs-owner">${avatar(owner.login, 'sm', `${owner.n}/${total} commits · `)}${esc(P(owner.login).name)} <b>${Math.round(share * 100)}%</b></span>
+    <span class="hs-metrics muted small" title="${plural(h.n, 'commit')} in total">
+      used by ${plural(h.uses, 'file')} · activity ${h.heat} · ${h.lines} lines<br>last change ${ago(h.last)}</span>
+    <span class="hs-owner">${avatar(owner.login, 'sm', `${owner.n}/${total} commits · `)}${esc(P(owner.login).name)}
+      <b>${Math.round(share * 100)}%</b></span>
     <span class="hs-pill">${share >= OWNER_WARNING
       ? '<span class="pill warn" title="One person made almost all the changes">bus factor 1</span>'
       : `<span class="pill">${plural(h.authors.length, 'author')}</span>`}</span>

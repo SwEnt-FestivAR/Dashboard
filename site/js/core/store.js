@@ -7,6 +7,7 @@
 
 import { DAY, esc, ts, uniq } from './utils.js';
 
+// Set once by initStore(), then only read (see the module comment above).
 export let D = null;
 export let STATUS = { screens: {} };
 export let NOW = 0;
@@ -27,6 +28,7 @@ export function initStore(data, status) {
 
 /** Person lookup that never fails: unknown logins get a placeholder. */
 export const P = (login) => D.people[login] || { login, name: login || 'unknown', avatar: '', bot: false, color: '#64748b' };
+/** Chart color of a person (stable, see PALETTE). */
 export const color = (login) => P(login).color;
 
 /** Link into the FestivAR repo, e.g. repoUrl('/pull/12'). */

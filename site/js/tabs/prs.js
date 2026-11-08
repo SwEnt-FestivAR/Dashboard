@@ -71,7 +71,11 @@ function render() {
   $('#kanban').innerHTML = cols.join('');
 }
 
-const CI_PILLS = { success: '<span class="pill ok">CI ✓</span>', failure: '<span class="pill bad">CI ✗</span>', pending: '<span class="pill warn">CI …</span>' };
+const CI_PILLS = {
+  success: '<span class="pill ok">CI ✓</span>',
+  failure: '<span class="pill bad">CI ✗</span>',
+  pending: '<span class="pill warn">CI …</span>',
+};
 
 /** Card of a PR approved this week: the full open-PR card, or a short card once merged. */
 function approvedCard(p) {

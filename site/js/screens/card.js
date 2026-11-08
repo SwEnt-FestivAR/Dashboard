@@ -17,7 +17,8 @@ export function screenCard(u, expanded) {
     : fileBlock(u.screen, 'Screen') + fileBlock(u.viewModel, 'ViewModel');
   return `<div class="unit" style="--sc:var(${info.css})">
     <div class="unit-head"><h4>${esc(u.key)}</h4>
-      <button class="status-btn" data-id="${esc(unitId(u))}" title="${esc(info.desc)}${why} — click to change">${info.label} <small>· ${st.manual ? 'manual' : 'auto'}</small></button>
+      <button class="status-btn" data-id="${esc(unitId(u))}" title="${esc(info.desc)}${why} — click to change">
+        ${info.label} <small>· ${st.manual ? 'manual' : 'auto'}</small></button>
     </div>
     <div class="blocks">${blocks}</div>
     <div class="unit-foot">
@@ -46,7 +47,8 @@ function testPills(u) {
 function prPills(u) {
   return u.openPRs.map((n) => {
     const pr = D.openPRs.find((p) => p.n === n);
-    return `<a class="pill info" href="${repoUrl(`/pull/${n}`)}" target="_blank" rel="noopener" title="${esc(pr?.title)} — ${nameOf(pr?.a)}">PR #${n}</a>`;
+    return `<a class="pill info" href="${repoUrl(`/pull/${n}`)}" target="_blank" rel="noopener"
+      title="${esc(pr?.title)} — ${nameOf(pr?.a)}">PR #${n}</a>`;
   }).join('');
 }
 
@@ -69,7 +71,8 @@ function fileBlock(f, kind) {
   if (!f) return `<div class="block missing">No ${kind}</div>`;
   const elsewhere = notOnMain(f);
   const href = elsewhere ? elsewhere[0] : repoUrl(`/blob/${D.branch}/${f.path}`);
-  const others = (f.contributors || []).filter((c) => c.login !== f.author);
+  const others = (f.contributors || []).filter((c) => c.login !== f.author)
+    .map((c) => avatar(c.login, 'xs', `${plural(c.n, 'commit')} · `)).join('');
   const history = elsewhere
     ? `~${f.lines} lines`
     : `${f.lines} lines · ${plural(f.commits, 'commit')}${f.todos ? ` · <span class="minus">${f.todos} TODO</span>` : ''}<br>
@@ -79,7 +82,7 @@ function fileBlock(f, kind) {
     <div class="fname">${extLink(href, esc(f.path.split('/').pop()))}</div>
     <div class="author">${avatar(f.author)}<div><span class="muted small">Initial author</span><b>${nameOf(f.author)}</b></div></div>
     <div class="meta">Created ${fmtDate(f.created)}<br>${history}
-      ${others.length ? `<div class="also">Also: <span class="avatars">${others.map((c) => avatar(c.login, 'xs', `${plural(c.n, 'commit')} · `)).join('')}</span></div>` : ''}
+      ${others ? `<div class="also">Also: <span class="avatars">${others}</span></div>` : ''}
     </div></div>`;
 }
 

@@ -3,7 +3,7 @@
 
 import { $, DAY, addWeeks, countBy, esc, fmtDate, fmtNum, plural, sumBy, ts, weekStart } from '../core/utils.js';
 import { D, NOW, isCompleted } from '../core/store.js';
-import { avatar, extLink, issueRow, kpis, linesHtml, listItems, prRow } from '../core/ui.js';
+import { avatar, card, extLink, issueRow, kpis, linesHtml, listCard, listItems, prRow } from '../core/ui.js';
 import { unitAssignees } from '../screens/units.js';
 
 const CALENDAR_WEEKS = 20;
@@ -11,15 +11,12 @@ const CALENDAR_WEEKS = 20;
 const html = `
   <div class="card profile-head" id="profileHead"></div>
   <div class="kpis" id="profileKpis"></div>
-  <div class="card">
-    <div class="card-head"><h3>Activity</h3><span class="muted small">commits per day, last ${CALENDAR_WEEKS} weeks</span></div>
-    <div class="calendar" id="profileCalendar"></div>
-  </div>
+  ${card('Activity', '<div class="calendar" id="profileCalendar"></div>', `commits per day, last ${CALENDAR_WEEKS} weeks`)}
   <div class="grid2">
-    <div class="card"><div class="card-head"><h3>Open PRs</h3></div><ul class="issue-list" id="profilePRs"></ul></div>
-    <div class="card"><div class="card-head"><h3>Assigned open issues</h3></div><ul class="issue-list" id="profileIssues"></ul></div>
-    <div class="card"><div class="card-head"><h3>Screens</h3><span class="muted small">initial author or planned by</span></div><ul class="issue-list" id="profileScreens"></ul></div>
-    <div class="card"><div class="card-head"><h3>Recently merged PRs</h3></div><ul class="issue-list" id="profileMerged"></ul></div>
+    ${listCard('Open PRs', 'profilePRs')}
+    ${listCard('Assigned open issues', 'profileIssues')}
+    ${listCard('Screens', 'profileScreens', 'initial author or planned by')}
+    ${listCard('Recently merged PRs', 'profileMerged')}
   </div>`;
 
 /** "merged 7 Nov 2026", "draft" or "ready for review". */
@@ -28,6 +25,10 @@ function prState(p) {
   return p.d ? 'draft' : 'ready for review';
 }
 const prWithState = (p) => prRow(p, `<span class="muted small">${prState(p)}</span>`);
+
+/** Row of the Screens list: link to the screen card, its feature and the person's role on it. */
+const screenRow = ([u, role]) => `<li><a class="title" href="#screens/${encodeURIComponent(u.key)}">${esc(u.key)}</a>
+  <span class="muted small">${esc(u.feature)}</span><span class="pill">${role}</span></li>`;
 
 /** Role of a person on a screen, or null: "Screen author", "ViewModel author" or "Planned". */
 function screenRole(u, login) {
@@ -83,8 +84,7 @@ function render(login) {
   $('#profileCalendar').innerHTML = calendar(login);
   $('#profilePRs').innerHTML = listItems(prs.filter((pr) => pr.s === 'open'), prWithState, 'No open PR');
   $('#profileIssues').innerHTML = listItems(openIssues, issueRow, 'No assigned open issue');
-  $('#profileScreens').innerHTML = listItems(screens, ([u, role]) =>
-    `<li><a class="title" href="#screens/${encodeURIComponent(u.key)}">${esc(u.key)}</a><span class="muted small">${esc(u.feature)}</span><span class="pill">${role}</span></li>`, 'No screen');
+  $('#profileScreens').innerHTML = listItems(screens, screenRow, 'No screen');
   $('#profileMerged').innerHTML = listItems(merged.slice(0, 10), prWithState, 'No merged PR');
 }
 

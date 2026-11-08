@@ -2,28 +2,26 @@
 // Review data needs a token: the automatic GITHUB_TOKEN of GitHub Actions provides it on the deployed site
 // (nothing to configure). Cycle time works without it.
 
-import { $, esc, fmtDuration, fmtShortDate } from '../core/utils.js';
+import { $, DAY, css, esc, fmtDuration, fmtShortDate, plural } from '../core/utils.js';
 import { D, P } from '../core/store.js';
-import { avatar, chart, kpis, peopleBarChart } from '../core/ui.js';
+import { avatar, card, chart, chartCard, chartOptions, kpis, peopleBarChart } from '../core/ui.js';
 import { SIZES, overview, reviewMatrix, reviewerStats, weeklyCycleTime } from '../reviews/stats.js';
+
+/** "S < 100 · M < 400 · L < 1000 · XL more". */
+const sizeLegend = SIZES.map(([s, max]) => (max === Infinity ? `${s} more` : `${s} &lt; ${max}`)).join(' · ');
 
 const html = `
   <div class="card notice" id="reviewNotice" hidden>Review data comes from the GitHub GraphQL API, which needs a token.
     The deployed site gets one automatically from GitHub Actions (nothing to configure); locally, only cycle time is available.</div>
   <div class="kpis" id="reviewKpis"></div>
   <div class="grid2">
-    <div class="card"><div class="card-head"><h3>PRs reviewed per person</h3><span class="muted small">distinct PRs of others</span></div>
-      <div class="chart-box"><canvas id="reviewedChart"></canvas></div></div>
-    <div class="card"><div class="card-head"><h3>Wait before first review</h3><span class="muted small">median on their PRs, hours</span></div>
-      <div class="chart-box"><canvas id="waitChart"></canvas></div></div>
+    ${chartCard('PRs reviewed per person', 'reviewedChart', 'distinct PRs of others')}
+    ${chartCard('Wait before first review', 'waitChart', 'median on their PRs, hours')}
   </div>
-  <div class="card"><div class="card-head"><h3>Who reviews whom</h3><span class="muted small">rows review the PRs of columns</span></div>
-    <div class="matrix-box" id="reviewMatrix"></div></div>
+  ${card('Who reviews whom', '<div class="matrix-box" id="reviewMatrix"></div>', 'rows review the PRs of columns')}
   <div class="grid2">
-    <div class="card"><div class="card-head"><h3>Cycle time</h3><span class="muted small">median open → merge per week, days</span></div>
-      <div class="chart-box"><canvas id="cycleChart"></canvas></div></div>
-    <div class="card"><div class="card-head"><h3>PR sizes</h3><span class="muted small">lines changed: ${SIZES.map(([s, max]) => (max === Infinity ? `${s} more` : `${s} &lt; ${max}`)).join(' · ')}</span></div>
-      <div class="chart-box"><canvas id="sizeChart"></canvas></div></div>
+    ${chartCard('Cycle time', 'cycleChart', 'median open → merge per week, days')}
+    ${chartCard('PR sizes', 'sizeChart', `lines changed: ${sizeLegend}`)}
   </div>`;
 
 const hasReviews = () => D.prs.some((p) => p.rv);
@@ -45,10 +43,14 @@ function render() {
     .map((s) => [s.login, Math.round(s.medianWait / 3600)]).sort((a, b) => b[1] - a[1]));
   $('#reviewMatrix').innerHTML = matrixTable(stats.map((s) => s.login));
   renderCycleChart();
+  const sizeColors = ['--ok', '--info', '--warn', '--bad'].map(css); // S → XL, green to red
   chart('sizeChart', {
     type: 'bar',
-    data: { labels: SIZES.map(([s]) => s), datasets: [{ data: SIZES.map(([s]) => o.sizes[s]), backgroundColor: ['#10b981', '#0ea5e9', '#f59e0b', '#f43f5e'], borderRadius: 6 }] },
-    options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } },
+    data: {
+      labels: SIZES.map(([s]) => s),
+      datasets: [{ data: SIZES.map(([s]) => o.sizes[s]), backgroundColor: sizeColors, borderRadius: 6 }],
+    },
+    options: chartOptions(),
   });
 }
 
@@ -68,16 +70,17 @@ function matrixTable(logins) {
 
 function renderCycleChart() {
   const weeks = weeklyCycleTime();
+  const days = weeks.map((w) => +(w.cycle / DAY).toFixed(2));
   chart('cycleChart', {
     type: 'line',
     data: {
       labels: weeks.map((w) => fmtShortDate(w.week)),
-      datasets: [{ data: weeks.map((w) => +(w.cycle / 86400).toFixed(2)), borderColor: '#6d4aff', backgroundColor: 'rgba(109,74,255,.15)', fill: true, tension: 0.3 }],
+      datasets: [{ data: days, borderColor: css('--accent'), backgroundColor: css('--accent-soft'), fill: true, tension: 0.3 }],
     },
-    options: {
-      maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { afterLabel: (c) => `${weeks[c.dataIndex].n} PRs merged` } } },
-      scales: { y: { beginAtZero: true }, x: { grid: { display: false } } },
-    },
+    options: chartOptions({
+      integers: false,
+      tooltip: { callbacks: { afterLabel: (c) => plural(weeks[c.dataIndex].n, 'PR') + ' merged' } },
+    }),
   });
 }
 

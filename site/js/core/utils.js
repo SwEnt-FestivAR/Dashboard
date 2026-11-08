@@ -1,8 +1,10 @@
 // Generic helpers. Nothing here knows about the dashboard data: put data-aware helpers in store.js
 // and HTML building blocks in ui.js.
 
-export const DAY = 86400; // seconds
+/** One day, in seconds (dates are unix seconds everywhere in the site). */
+export const DAY = 86400;
 
+/** DOM shortcuts: the first element / all the elements matching a CSS selector. */
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
@@ -15,7 +17,9 @@ export const css = (name) => getComputedStyle(document.documentElement).getPrope
 /** ISO date -> unix seconds (null stays null). */
 export const ts = (iso) => (iso ? Date.parse(iso) / 1000 : null);
 
+/** "7 Nov 2026", or "—" without a date. */
 export const fmtDate = (t) => (t ? new Date(t * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+/** "1,234". */
 export const fmtNum = (n) => n.toLocaleString('en-US');
 /** "7 Nov", for chart labels and axes. */
 export const fmtShortDate = (t) => new Date(t * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
@@ -49,7 +53,8 @@ export function addWeeks(t, n) {
 }
 
 /** "Fri 31 Oct, 12:00". */
-export const fmtWeekDay = (t) => new Date(t * 1000).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+export const fmtWeekDay = (t) => new Date(t * 1000)
+  .toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 /** Median of a list of numbers (null for an empty list). */
 export function median(values) {
@@ -64,6 +69,7 @@ export function fmtDuration(sec) {
   return sec < DAY ? `${Math.round(sec / 3600)}h` : `${(sec / DAY).toFixed(1)}d`;
 }
 
+/** The items without duplicates, in first-seen order. */
 export const uniq = (items) => [...new Set(items)];
 
 /** { key: count } of how many times each key appears. */

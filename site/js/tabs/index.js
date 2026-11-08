@@ -22,4 +22,5 @@ import code from './code.js';
 import trends from './trends.js';
 import person from './person.js';
 
+// Registered tabs, in nav order.
 export const TABS = [contributors, week, screens, prs, reviews, milestones, code, trends, person];

@@ -22,6 +22,19 @@ export function kpis(items) {
     `<div class="kpi"><div class="l">${label}</div><div class="v">${value}</div>${sub ? `<div class="muted small">${sub}</div>` : ''}</div>`).join('');
 }
 
+/** A card with a title, an optional grey subtitle (HTML) and a body (HTML), for the tabs' static markup. */
+export const card = (title, body, sub = '') => `<div class="card">
+  <div class="card-head"><h3>${title}</h3>${sub ? `<span class="muted small">${sub}</span>` : ''}</div>
+  ${body}
+</div>`;
+
+/** A card holding an empty <ul id> that the tab fills in render(). */
+export const listCard = (title, listId, sub = '') => card(title, `<ul class="issue-list" id="${listId}"></ul>`, sub);
+
+/** A card holding an empty <canvas id> for chart(); `tall` gives it more height. */
+export const chartCard = (title, canvasId, sub = '', tall = false) =>
+  card(title, `<div class="chart-box${tall ? ' tall' : ''}"><canvas id="${canvasId}"></canvas></div>`, sub);
+
 /** <li> items of a list built with `row`, or a single "empty" item with the `empty` text. */
 export const listItems = (items, row, empty) => items.map(row).join('') || `<li class="empty">${empty}</li>`;
 
@@ -67,6 +80,26 @@ export function chart(id, config) {
 export function clearChart(id) {
   charts[id]?.destroy();
   delete charts[id];
+}
+
+/**
+ * Shared options of the vertical charts: fill the .chart-box height, one tooltip for all series of a column,
+ * legend at the bottom (or hidden), y axis from 0 with integer ticks (unless `integers` is false), no
+ * vertical grid lines. `stacked` stacks the series; `tooltip` adds Chart.js tooltip options.
+ */
+export function chartOptions({ legend = false, stacked = false, integers = true, tooltip = {} } = {}) {
+  return {
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: legend ? { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } : { display: false },
+      tooltip,
+    },
+    scales: {
+      x: { stacked, grid: { display: false } },
+      y: { stacked, beginAtZero: true, ...(integers && { ticks: { precision: 0 } }) },
+    },
+  };
 }
 
 /** Horizontal bar chart with one bar per person, colored with their color. rows: [[login, value]]. */
