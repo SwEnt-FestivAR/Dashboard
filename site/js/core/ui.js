@@ -22,6 +22,9 @@ export function kpis(items) {
     `<div class="kpi"><div class="l">${label}</div><div class="v">${value}</div>${sub ? `<div class="muted small">${sub}</div>` : ''}</div>`).join('');
 }
 
+/** <li> items of a list built with `row`, or a single "empty" item with the `empty` text. */
+export const listItems = (items, row, empty) => items.map(row).join('') || `<li class="empty">${empty}</li>`;
+
 /** One <li> of an .issue-list: number, title, labels, assignees, age. */
 export function issueRow(i) {
   const labels = i.labels.map((l) => `<span class="label" style="color:#${esc(l.color)};border-color:#${esc(l.color)}">${esc(l.name)}</span>`).join('');

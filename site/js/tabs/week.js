@@ -3,7 +3,7 @@
 
 import { $, $$, DAY, addWeeks, countBy, esc, fmtWeekDay, plural, ts, weekStart } from '../core/utils.js';
 import { D, NOW, P, nameOf, repoUrl } from '../core/store.js';
-import { avatar, extLink, issueRow, kpis } from '../core/ui.js';
+import { avatar, extLink, issueRow, kpis, listItems } from '../core/ui.js';
 
 const STALE_DAYS = 3;
 const state = { offset: 0 }; // 0 = week containing NOW, 1 = the week before, …
@@ -57,7 +57,6 @@ function weekData() {
 }
 
 const prRow = (p) => `<li><span class="num">#${p.n}</span>${extLink(repoUrl(`/pull/${p.n}`), esc(p.title), 'title')}${avatar(p.a, 'sm')}</li>`;
-const list = (items, row, empty) => items.map(row).join('') || `<li class="empty">${empty}</li>`;
 
 function render() {
   const w = weekData();
@@ -70,12 +69,12 @@ function render() {
     ['Issues closed', w.closed.length],
     ['New screens', w.newScreens.length],
   ]);
-  $('#weekMerged').innerHTML = list(w.merged, prRow, 'No PR merged');
-  $('#weekIssues').innerHTML = list(w.closed, issueRow, 'No issue closed');
-  $('#weekScreens').innerHTML = list(w.newScreens, (u) => `<li><b class="title">${esc(u.key)}</b><span class="muted small">${esc(u.feature)}</span></li>`, 'No new screen');
-  $('#weekPeople').innerHTML = list(w.commits, ([l, n]) => `<li>${avatar(l, 'sm')}<span class="title">${nameOf(l)}</span><b>${plural(n, 'commit')}</b></li>`, 'No commit');
+  $('#weekMerged').innerHTML = listItems(w.merged, prRow, 'No PR merged');
+  $('#weekIssues').innerHTML = listItems(w.closed, issueRow, 'No issue closed');
+  $('#weekScreens').innerHTML = listItems(w.newScreens, (u) => `<li><b class="title">${esc(u.key)}</b><span class="muted small">${esc(u.feature)}</span></li>`, 'No new screen');
+  $('#weekPeople').innerHTML = listItems(w.commits, ([l, n]) => `<li>${avatar(l, 'sm')}<span class="title">${nameOf(l)}</span><b>${plural(n, 'commit')}</b></li>`, 'No commit');
   $('#weekStaleCard').hidden = !w.current; // "stale" only makes sense for the current week
-  $('#weekStale').innerHTML = list(w.stale, prRow, 'No stale PR 🎉');
+  $('#weekStale').innerHTML = listItems(w.stale, prRow, 'No stale PR 🎉');
 }
 
 /** Plain-text summary of the week, ready to paste. */

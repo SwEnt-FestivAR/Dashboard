@@ -3,7 +3,7 @@
 
 import { $, DAY, addWeeks, countBy, esc, fmtDate, fmtNum, plural, ts, weekStart } from '../core/utils.js';
 import { D, NOW, repoUrl } from '../core/store.js';
-import { avatar, extLink, issueRow, kpis } from '../core/ui.js';
+import { avatar, extLink, issueRow, kpis, listItems } from '../core/ui.js';
 import { unitAssignees } from '../screens/units.js';
 
 const CALENDAR_WEEKS = 20;
@@ -24,7 +24,6 @@ const html = `
 
 const prRow = (p) => `<li><span class="num">#${p.n}</span>${extLink(repoUrl(`/pull/${p.n}`), esc(p.title), 'title')}
   <span class="muted small">${p.m ? `merged ${fmtDate(ts(p.m))}` : p.d ? 'draft' : 'ready for review'}</span></li>`;
-const list = (items, row, empty) => items.map(row).join('') || `<li class="empty">${empty}</li>`;
 
 /** Role of a person on a screen, or null: "Screen author", "ViewModel author" or "Planned". */
 function screenRole(u, login) {
@@ -77,11 +76,11 @@ function render(login) {
     ['Lines changed', `<span class="plus">+${fmtNum(commits.reduce((t, c) => t + c.add, 0))}</span> <span class="minus small">−${fmtNum(commits.reduce((t, c) => t + c.del, 0))}</span>`],
   ]);
   $('#profileCalendar').innerHTML = calendar(login);
-  $('#profilePRs').innerHTML = list(prs.filter((pr) => pr.s === 'open'), prRow, 'No open PR');
-  $('#profileIssues').innerHTML = list(openIssues, issueRow, 'No assigned open issue');
-  $('#profileScreens').innerHTML = list(screens, ([u, role]) =>
+  $('#profilePRs').innerHTML = listItems(prs.filter((pr) => pr.s === 'open'), prRow, 'No open PR');
+  $('#profileIssues').innerHTML = listItems(openIssues, issueRow, 'No assigned open issue');
+  $('#profileScreens').innerHTML = listItems(screens, ([u, role]) =>
     `<li><a class="title" href="#screens/${encodeURIComponent(u.key)}">${esc(u.key)}</a><span class="muted small">${esc(u.feature)}</span><span class="pill">${role}</span></li>`, 'No screen');
-  $('#profileMerged').innerHTML = list(merged.slice(0, 10), prRow, 'No merged PR');
+  $('#profileMerged').innerHTML = listItems(merged.slice(0, 10), prRow, 'No merged PR');
 }
 
 export default { id: 'person', label: 'Profile', hidden: true, html, setup() {}, render };
