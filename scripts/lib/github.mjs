@@ -114,7 +114,6 @@ export async function openPRDetails(pulls) {
     out.push({
       n: p.number, title: p.title, a: fromApiUser(p.user), d: !!p.draft, c: p.created_at, u: p.updated_at,
       branch: p.head.ref, reviewers: (p.requested_reviewers || []).map(fromApiUser), review, ci,
-      labels: (p.labels || []).map((l) => ({ name: l.name, color: l.color })),
       files: files.map((f) => ({ f: f.filename, s: f.status, add: f.additions, del: f.deletions })),
     });
   }

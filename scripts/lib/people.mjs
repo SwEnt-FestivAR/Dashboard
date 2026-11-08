@@ -3,7 +3,8 @@
 
 import fs from 'node:fs';
 
-export const people = {}; // login -> { login, name, avatar, bot }
+/** Everyone met so far: login -> { login, name, avatar, bot }. Written to data.json as is. */
+export const people = {};
 
 const emailToLogin = {}, nameToLogin = {}, shaToLogin = {};
 // Manual identity fixes: { "git name or email": "github-login" }

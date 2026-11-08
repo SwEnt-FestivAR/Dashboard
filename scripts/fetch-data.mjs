@@ -21,13 +21,14 @@
 //   hasToken         false = openPRs[].review and .ci are null, prs[].size and .rv are missing
 //   people           { login: { login, name, avatar, bot } }
 //   commits          [[unix, login, linesAdded, linesDeleted], ...]  (merge commits excluded)
-//   prs              [{ n, title, a, s: "open"|"closed", d: draft, c: created, m: merged, cl: closed, u: updated,
-//                       size: lines added + deleted, rv: [[reviewer login, "A"pproved|"C"hanges requested|"R" commented|"D"ismissed, unix]] }]
+//   prs              [{ n, title, a, s: "open"|"closed", d: draft, c: created, m: merged,
+//                       size: lines added + deleted, rv: [[reviewer, "A"pproved|"C"hanges requested|"R" commented|"D"ismissed, unix]] }]
 //                    size and rv only exist when hasToken (they come from GraphQL, see prReviews() in lib/github.mjs)
-//   issues           [{ n, title, s, r: state_reason, c, cl, a: opener, as: [assignees], ms: milestone title, labels: [{name,color}] }]
-//   openPRs          [{ n, title, a, d, c, u, branch, reviewers: [login], review: "none"|"commented"|"changes"|"approved"|null,
-//                       ci: "success"|"failure"|"pending"|"none"|null, labels, files: [{f, s, add, del}], screens: ["feature/Key"] }]
-//   milestones       [{ title, state, due, open, closed, url, description }]
+//   issues           [{ n, title, s, r: state_reason, c: created, cl: closed, as: [assignees], ms: milestone title,
+//                       labels: [{name, color}] }]
+//   openPRs          [{ n, title, a, d, c, u: updated, branch, reviewers: [login], review: "none"|"commented"|"changes"|"approved"|null,
+//                       ci: "success"|"failure"|"pending"|"none"|null, files: [{f, s, add, del}], screens: ["feature/Key"] }]
+//   milestones       [{ title, state, due }] (open / closed counts are computed by the site from `issues`)
 //   units            one entry per screen, i.e. a Screen/ViewModel pair:
 //                    { feature, key, screen: FileInfo|null, viewModel: FileInfo|null, openPRs: [n], branches: [branch names touching it],
 //                      tests: { ui: [name], unit: [name] } }
@@ -52,8 +53,6 @@ import { api, apiCalls, openPRDetails, prReviews } from './lib/github.mjs';
 import { hotspots, navigationGraph, readCommits } from './lib/repo.mjs';
 import { buildUnits } from './lib/screens.mjs';
 
-const labelsOf = (item) => (item.labels || []).map((l) => ({ name: l.name, color: l.color }));
-
 async function main() {
   console.log(`Repo ${REPO}, clone ${SRC}, token: ${TOKEN ? 'yes' : 'no'}`);
   const branch = git('rev-parse', '--abbrev-ref', 'HEAD').trim();
@@ -69,13 +68,13 @@ async function main() {
   const { commits, fileChanges } = readCommits(branch);
   const reviews = TOKEN ? await prReviews() : {};
   const prs = pulls.map((p) => ({
-    n: p.number, title: p.title, a: fromApiUser(p.user), s: p.state, d: !!p.draft,
-    c: p.created_at, m: p.merged_at, cl: p.closed_at, u: p.updated_at,
+    n: p.number, title: p.title, a: fromApiUser(p.user), s: p.state, d: !!p.draft, c: p.created_at, m: p.merged_at,
     ...reviews[p.number],
   }));
   const issues = issuesRaw.filter((i) => !i.pull_request).map((i) => ({ // the issues endpoint also returns PRs
     n: i.number, title: i.title, s: i.state, r: i.state_reason, c: i.created_at, cl: i.closed_at,
-    a: fromApiUser(i.user), as: (i.assignees || []).map(fromApiUser), ms: i.milestone?.title || null, labels: labelsOf(i),
+    as: (i.assignees || []).map(fromApiUser), ms: i.milestone?.title || null,
+    labels: (i.labels || []).map((l) => ({ name: l.name, color: l.color })),
   }));
   const openPRs = await openPRDetails(pulls);
   const allFiles = git('ls-files').split('\n').filter(Boolean);
@@ -83,14 +82,15 @@ async function main() {
   const data = {
     repo: REPO, siteRepo: SITE_REPO, branch, generatedAt: new Date().toISOString(), hasToken: Boolean(TOKEN),
     people, commits, prs, issues, openPRs,
-    milestones: milestones.map((m) => ({ title: m.title, state: m.state, due: m.due_on, open: m.open_issues, closed: m.closed_issues, url: m.html_url, description: m.description })),
+    milestones: milestones.map((m) => ({ title: m.title, state: m.state, due: m.due_on })),
     units: buildUnits(allFiles, openPRs, branch),
     navigation: navigationGraph(allFiles),
     hotspots: hotspots(allFiles, fileChanges),
   };
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(data));
-  console.log(`Wrote ${OUT}: ${commits.length} commits, ${prs.length} PRs, ${issues.length} issues, ${data.units.length} screen units, ${apiCalls()} API calls`);
+  const counts = `${commits.length} commits, ${prs.length} PRs, ${issues.length} issues, ${data.units.length} screen units`;
+  console.log(`Wrote ${OUT}: ${counts}, ${apiCalls()} API calls`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

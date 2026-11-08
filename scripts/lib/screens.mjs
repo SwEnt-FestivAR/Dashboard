@@ -50,7 +50,8 @@ function branchChanges(branch) {
 
 /** FileInfo of a file that only exists in a branch: author and date of the commit that added it there. */
 function branchFileInfo(branch, file) {
-  const [sha, name, email, at] = git('log', '-1', '--diff-filter=A', '--format=%H%x1f%an%x1f%ae%x1f%at', `origin/${branch}`, '--', file).trim().split('\x1f');
+  const added = git('log', '-1', '--diff-filter=A', '--format=%H%x1f%an%x1f%ae%x1f%at', `origin/${branch}`, '--', file);
+  const [sha, name, email, at] = added.trim().split('\x1f');
   const author = resolve(name, email, sha);
   const lines = countLines(git('show', `origin/${branch}:${file}`));
   return { path: file, inBranch: branch, author, created: Number(at), lines, contributors: [{ login: author, n: 1 }] };
@@ -62,7 +63,8 @@ function branchFileInfo(branch, file) {
  */
 export function buildUnits(allFiles, openPRs, branch) {
   const units = {};
-  const unitFor = ({ feature, key }) => (units[`${feature}/${key}`] ||= { feature, key, screen: null, viewModel: null, openPRs: [], branches: [] });
+  const unitFor = ({ feature, key }) =>
+    (units[`${feature}/${key}`] ||= { feature, key, screen: null, viewModel: null, openPRs: [], branches: [] });
 
   for (const f of allFiles) {
     const p = parse(f);
@@ -75,7 +77,8 @@ export function buildUnits(allFiles, openPRs, branch) {
       if (!p) continue;
       const u = unitFor(p);
       if (!u[p.slot] && file.s !== 'removed') {
-        u[p.slot] = { path: file.f, inPR: pr.n, author: pr.a, created: Date.parse(pr.c) / 1000, lines: file.add, contributors: [{ login: pr.a, n: 1 }] };
+        const created = Date.parse(pr.c) / 1000;
+        u[p.slot] = { path: file.f, inPR: pr.n, author: pr.a, created, lines: file.add, contributors: [{ login: pr.a, n: 1 }] };
       }
       if (!u.openPRs.includes(pr.n)) u.openPRs.push(pr.n);
       if (!pr.screens.includes(`${p.feature}/${p.key}`)) pr.screens.push(`${p.feature}/${p.key}`);

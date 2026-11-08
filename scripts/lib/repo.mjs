@@ -7,7 +7,9 @@ import { resolve } from './people.mjs';
 
 const HOTSPOTS = 40; // number of hotspot files kept in data.json
 
+/** Text of a file of the FestivAR clone (path relative to its root). */
 export const readFile = (file) => fs.readFileSync(path.join(SRC, file), 'utf8');
+/** Number of lines of a text. */
 export const countLines = (text) => text.split('\n').length;
 
 /** [{ login, n }] sorted by n, from { login: n }. */
