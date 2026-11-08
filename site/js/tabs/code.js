@@ -23,10 +23,10 @@ const html = `
     <div class="card-head"><h3>Hotspots</h3>
       <label class="check"><input type="checkbox" id="hotspotTests"> Include tests</label>
     </div>
-    <p class="muted small">Score = <b>recent activity</b> × log<sub>2</sub>(1 + <b>complexity</b>).
-      Recent activity sums the changes to the file, each one halved every 14 days (two sprints) and weighted by its size (log of lines changed).
-      Complexity is the sum of indentation levels of the code, so nested logic weighs more than long flat code.
-      Files at the top change a lot <em>now</em> and are hard to read: that is where bugs and merge conflicts concentrate.</p>
+    <p class="muted small">Score out of 100 = <b>50%</b> how widely the file is <b>used</b> (other files that mention its class)
+      + <b>30%</b> its <b>recent activity</b> (each change halved every 14 days and weighted by its size)
+      + <b>20%</b> its <b>size</b> (lines). Each criterion is a percentile among the production files.
+      Files at the top are central, changing now and big: a bug there spreads, so they deserve the most care and review.</p>
     <div class="hotspots" id="hotspots"></div>
   </div>`;
 
@@ -37,8 +37,7 @@ function setup() {
 function render() {
   renderNavGraph();
   const rows = D.hotspots.filter((h) => $('#hotspotTests').checked || !isTest(h.f));
-  const maxScore = Math.max(1, ...rows.map((h) => h.score));
-  $('#hotspots').innerHTML = rows.map((h, i) => hotspotRow(h, i, maxScore)).join('') || '<div class="empty">No hotspot</div>';
+  $('#hotspots').innerHTML = rows.map(hotspotRow).join('') || '<div class="empty">No hotspot</div>';
 }
 
 /** Draws the graph and highlights the links of the hovered screen (others fade out). */
@@ -56,7 +55,8 @@ function renderNavGraph() {
   }
 }
 
-function hotspotRow(h, rank, maxScore) {
+/** One hotspot. Its cells are placed with grid areas, so the same markup is a row on desktop and a card on phones. */
+function hotspotRow(h, rank) {
   const total = sumBy(h.authors, (a) => a.n);
   const owner = h.authors[0];
   const share = owner.n / total;
@@ -65,10 +65,13 @@ function hotspotRow(h, rank, maxScore) {
     <span class="rank">${rank + 1}</span>
     <div class="hs-file">${extLink(repoUrl(`/blob/${D.branch}/${h.f}`), esc(h.f.split('/').pop()))}
       <span class="muted small">${esc(dir)}${isTest(h.f) ? ' · test' : ''}</span></div>
-    <div class="hs-score" title="Score ${h.score} = activity ${h.heat} × log2(1 + complexity ${h.complexity})"><div style="width:${(100 * h.score) / maxScore}%"></div></div>
-    <span class="muted small" title="${plural(h.n, 'commit')} in total, ${h.lines} lines">activity ${h.heat} · complexity ${h.complexity}<br>last change ${ago(h.last)}</span>
+    <div class="hs-score" title="Score out of 100"><b>${h.score}</b><div class="hs-bar"><div style="width:${h.score}%"></div></div></div>
+    <span class="hs-metrics muted small" title="${plural(h.n, 'commit')} in total">used by ${plural(h.uses, 'file')} · activity ${h.heat} · ${h.lines} lines<br>
+      last change ${ago(h.last)}</span>
     <span class="hs-owner">${avatar(owner.login, 'sm', `${owner.n}/${total} commits · `)}${esc(P(owner.login).name)} <b>${Math.round(share * 100)}%</b></span>
-    ${share >= OWNER_WARNING ? '<span class="pill warn" title="One person made almost all the changes">bus factor 1</span>' : `<span class="pill">${plural(h.authors.length, 'author')}</span>`}
+    <span class="hs-pill">${share >= OWNER_WARNING
+      ? '<span class="pill warn" title="One person made almost all the changes">bus factor 1</span>'
+      : `<span class="pill">${plural(h.authors.length, 'author')}</span>`}</span>
   </div>`;
 }
 

@@ -202,16 +202,24 @@ a.pill:hover { text-decoration: none; filter: brightness(1.1); }
 .nav-graph.focus .ng-edge.on { opacity: 1; stroke: var(--accent); stroke-width: 2.2; }
 
 /* Hotspots */
-.hotspot { display: grid; grid-template-columns: 28px minmax(180px, 1.4fr) 1fr 150px minmax(160px, 1fr) 110px; align-items: center; gap: 12px; padding: 9px 4px; border-bottom: 1px solid var(--border); }
-.hotspot .rank { color: var(--muted); font-weight: 700; text-align: right; }
-.hs-file { display: flex; flex-direction: column; min-width: 0; }
-.hs-file a { font-family: ui-monospace, monospace; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; }
-.hs-score { height: 8px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
-.hs-score div { height: 100%; background: linear-gradient(90deg, var(--warn), var(--bad)); border-radius: 99px; }
-.hs-owner { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+/* Same markup, two layouts: a row on desktop, a small card on phones (grid areas). */
+.hotspot { display: grid; align-items: center; gap: 6px 14px; padding: 10px 4px; border-bottom: 1px solid var(--border);
+  grid-template-columns: 28px minmax(170px, 1.3fr) 150px minmax(190px, 1.2fr) minmax(150px, 1fr) 100px;
+  grid-template-areas: "rank file score metrics owner pill"; }
+.hotspot .rank { grid-area: rank; color: var(--muted); font-weight: 700; text-align: right; }
+.hs-file { grid-area: file; display: flex; flex-direction: column; min-width: 0; }
+.hs-file a { font-family: ui-monospace, monospace; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hs-score { grid-area: score; display: flex; align-items: center; gap: 8px; }
+.hs-score b { min-width: 22px; text-align: right; }
+.hs-bar { flex: 1; height: 8px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+.hs-bar div { height: 100%; background: linear-gradient(90deg, var(--warn), var(--bad)); border-radius: 99px; }
+.hs-metrics { grid-area: metrics; line-height: 1.5; }
+.hs-owner { grid-area: owner; display: flex; align-items: center; gap: 6px; font-size: 13px; min-width: 0; }
+.hs-pill { grid-area: pill; }
 @media (max-width: 900px) {
-  .hotspot { grid-template-columns: 24px 1fr auto; }
-  .hs-score { grid-column: 2 / -1; }
+  .hotspot { grid-template-columns: 24px 1fr auto; align-items: start; padding: 12px 4px;
+    grid-template-areas: "rank file file" "rank score score" "rank metrics metrics" "rank owner pill"; }
+  .hs-pill { justify-self: end; align-self: center; }
 }
 
 /* Search palette */

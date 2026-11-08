@@ -52,37 +52,57 @@ export function readCommits(branch) {
   return { commits, fileChanges };
 }
 
+// Weights of the hotspot criteria (they sum to 1): how widely the file is used matters most, then how much
+// it changes lately, then its size.
+const WEIGHTS = { uses: 0.5, heat: 0.3, lines: 0.2 };
+
 /**
- * Indentation-based complexity, a standard language-agnostic proxy (A. Tornhill, "Your Code as a Crime
- * Scene"): the sum of the indentation levels of the code lines. Nested if/when/lambdas weigh more than
- * flat code, which plain line counts miss. Blank lines, comments and imports are ignored; Kotlin uses
- * 2- or 4-space indents, counted as levels of 2 spaces.
+ * Usages of each Kotlin file: how many OTHER production files (app/src/main) mention its class name, i.e.
+ * the file name without ".kt" as a whole word (Kotlin names a file after its main class and needs no import
+ * within a package, so a name search is the reliable signal). Returns (file) => count.
  */
-function complexity(text) {
-  let total = 0;
-  for (const line of text.split('\n')) {
-    const code = line.trimStart();
-    if (!code || /^(\/\/|\/\*|\*|import |package )/.test(code)) continue;
-    total += Math.floor((line.length - code.length) / 2);
-  }
-  return total;
+function usageCounter(allFiles) {
+  const sources = allFiles.filter((f) => f.startsWith('app/src/main/') && f.endsWith('.kt')).map((f) => [f, readFile(f)]);
+  return (file) => {
+    const name = new RegExp(`\\b${path.basename(file, '.kt')}\\b`);
+    return sources.filter(([f, text]) => f !== file && name.test(text)).length;
+  };
 }
 
 /**
- * Current Kotlin files of app/src that change a lot recently AND are complex: score = heat × log2(1 + complexity).
- * The log keeps big-but-quiet files from dominating: activity matters more than size. Renamed files count
- * only under their current name.
+ * Percentile function over the values: (x) => 0–100, using mid-ranks so that ties share the same middle
+ * position (otherwise, when most files have 0 usages, a single usage would already rank near the top).
+ */
+function percentile(values) {
+  return (x) => {
+    const below = values.filter((v) => v < x).length, equal = values.filter((v) => v === x).length;
+    return (100 * (below + equal / 2)) / values.length;
+  };
+}
+
+/**
+ * Current Kotlin files of app/src ranked by a score out of 100: each criterion becomes a percentile
+ * (robust to extreme values), then score = 50% usages + 30% recent activity (heat) + 20% lines.
+ * Percentiles are measured among production files (app/src/main): test files are never used elsewhere and
+ * would skew them; tests are still scored, against that same scale. Renamed files count only under their
+ * current name.
  */
 export function hotspots(allFiles, fileChanges) {
-  return allFiles
+  const usesOf = usageCounter(allFiles);
+  const files = allFiles
     .filter((f) => f.startsWith('app/src/') && f.endsWith('.kt') && fileChanges[f])
-    .map((f) => {
-      const text = readFile(f), fc = fileChanges[f], cx = complexity(text);
-      return {
-        f, n: fc.n, heat: Math.round(fc.heat * 10) / 10, complexity: cx, lines: countLines(text), last: fc.last,
-        score: Math.round(fc.heat * Math.log2(1 + cx)), authors: ranked(fc.authors),
-      };
-    })
+    .map((f) => ({ f, fc: fileChanges[f], lines: countLines(readFile(f)), uses: usesOf(f) }));
+  const production = files.filter((x) => x.f.startsWith('app/src/main/'));
+  const pct = {
+    uses: percentile(production.map((x) => x.uses)),
+    heat: percentile(production.map((x) => x.fc.heat)),
+    lines: percentile(production.map((x) => x.lines)),
+  };
+  return files
+    .map(({ f, fc, lines, uses }) => ({
+      f, n: fc.n, heat: Math.round(fc.heat * 10) / 10, lines, uses, last: fc.last, authors: ranked(fc.authors),
+      score: Math.round(WEIGHTS.uses * pct.uses(uses) + WEIGHTS.heat * pct.heat(fc.heat) + WEIGHTS.lines * pct.lines(lines)),
+    }))
     .sort((a, b) => b.score - a.score)
     .slice(0, HOTSPOTS);
 }
