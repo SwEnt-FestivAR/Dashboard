@@ -1,7 +1,7 @@
 // Trends tab: curves over the semester from history.json, the daily snapshots that the workflow keeps on
 // the `data` branch (see scripts/snapshot.mjs). The file is loaded the first time the tab is shown.
 
-import { $, css, fmtDate, ts } from '../core/utils.js';
+import { $, css, fmtDate, fmtShortDate, ts } from '../core/utils.js';
 import { chart, kpis } from '../core/ui.js';
 import { STATUSES } from '../screens/units.js';
 
@@ -27,7 +27,8 @@ async function load() {
 /** "+3" / "−2" / "±0" between the first and the last snapshot. */
 const delta = (key, pick = (h) => h[key]) => {
   const n = pick(history.at(-1)) - pick(history[0]);
-  return n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '±0';
+  if (n > 0) return `+${n}`;
+  return n < 0 ? `−${-n}` : '±0';
 };
 
 async function render() {
@@ -48,7 +49,7 @@ async function render() {
     ['Screens finalized', done(history.at(-1)), `${delta(null, done)} ${since}`],
   ]);
 
-  const labels = history.map((h) => fmtDate(ts(h.d)).replace(/ \d{4}$/, ''));
+  const labels = history.map((h) => fmtShortDate(ts(h.d)));
   const line = (label, key, color, dashed) => ({ label, data: history.map((h) => h[key]), borderColor: color, backgroundColor: color, borderDash: dashed ? [5, 4] : [], tension: 0.3, pointRadius: 2 });
   chart('flowChart', {
     type: 'line',

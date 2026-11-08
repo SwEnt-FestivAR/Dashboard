@@ -2,9 +2,9 @@
 // week (Friday 12:00 → Friday 12:00), merged ones included; older approvals go back to "Needs review".
 // The review columns need review data, which only exists when the fetch had a token (D.hasToken).
 
-import { $, DAY, addWeeks, esc, fmtNum, fmtWeekDay, ts, uniq, weekStart } from '../core/utils.js';
-import { D, NOW, ago, nameOf, repoUrl } from '../core/store.js';
-import { avatar, avatars, extLink, fillPeopleSelect, kpis } from '../core/ui.js';
+import { $, DAY, addWeeks, esc, fmtWeekDay, sumBy, ts, uniq, weekStart } from '../core/utils.js';
+import { D, NOW, ago, nameOf } from '../core/store.js';
+import { avatar, avatars, fillPeopleSelect, kpis, linesHtml, prLink } from '../core/ui.js';
 import { approvalTimes, approvers } from '../reviews/stats.js';
 
 const STALE_DAYS = 3;
@@ -50,7 +50,7 @@ function setup() {
 function render() {
   const all = D.openPRs;
   const approved = D.hasToken ? approvedThisWeek() : [];
-  const avgAgeDays = all.length ? all.reduce((t, p) => t + (NOW - ts(p.c)), 0) / all.length / DAY : 0;
+  const avgAgeDays = all.length ? sumBy(all, (p) => NOW - ts(p.c)) / all.length / DAY : 0;
   $('#prKpis').innerHTML = kpis([
     ['Open PRs', all.length],
     ['Drafts', all.filter((p) => p.d).length],
@@ -79,7 +79,7 @@ function approvedCard(p) {
   const openPR = D.openPRs.find((o) => o.n === p.n);
   if (openPR) return prCard(openPR, approval);
   return `<div class="pr">
-    ${extLink(repoUrl(`/pull/${p.n}`), `<span class="muted">#${p.n}</span> ${esc(p.title)}`, 't')}
+    ${prLink(p)}
     <div class="row">${avatar(p.a, 'xs')} ${nameOf(p.a)} · <span class="pill ok">merged ${ago(ts(p.m))}</span></div>
     ${approval}
   </div>`;
@@ -88,13 +88,13 @@ function approvedCard(p) {
 /** Card of an open PR; `extra` is appended HTML (e.g. the approval row). */
 function prCard(p, extra = '') {
   const stale = isStale(p);
-  const add = p.files.reduce((t, f) => t + f.add, 0), del = p.files.reduce((t, f) => t + f.del, 0);
+  const add = sumBy(p.files, (f) => f.add), del = sumBy(p.files, (f) => f.del);
   const activity = stale ? `<span class="pill warn">⏰ idle ${ago(ts(p.u)).replace(' ago', '')}</span>` : `<span>updated ${ago(ts(p.u))}</span>`;
   return `<div class="pr ${stale ? 'stale' : ''}">
-    ${extLink(repoUrl(`/pull/${p.n}`), `<span class="muted">#${p.n}</span> ${esc(p.title)}`, 't')}
+    ${prLink(p)}
     <div class="row">${avatar(p.a, 'xs')} ${nameOf(p.a)} · opened ${ago(ts(p.c))}</div>
     <div class="row">${activity} ${CI_PILLS[p.ci] || ''}
-      <span><span class="plus">+${fmtNum(add)}</span> <span class="minus">−${fmtNum(del)}</span> · ${p.files.length} files</span></div>
+      <span>${linesHtml(add, del)} · ${p.files.length} files</span></div>
     ${p.reviewers.length ? `<div class="row">Review requested: ${avatars(p.reviewers)}</div>` : ''}
     ${p.screens?.length ? `<div class="row">${p.screens.map((s) => `<a class="pill" href="#screens">${esc(s.split('/')[1])}</a>`).join('')}</div>` : ''}
     ${extra}

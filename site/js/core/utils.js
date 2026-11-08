@@ -17,6 +17,11 @@ export const ts = (iso) => (iso ? Date.parse(iso) / 1000 : null);
 
 export const fmtDate = (t) => (t ? new Date(t * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
 export const fmtNum = (n) => n.toLocaleString('en-US');
+/** "7 Nov", for chart labels and axes. */
+export const fmtShortDate = (t) => new Date(t * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+/** Sum of value(item) over the items. */
+export const sumBy = (items, value) => items.reduce((total, item) => total + value(item), 0);
 
 /** "3 issues", "1 issue". */
 export const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -54,7 +59,10 @@ export function median(values) {
 }
 
 /** Seconds -> "5h", "2.5d". */
-export const fmtDuration = (sec) => (sec == null ? '—' : sec < DAY ? `${Math.round(sec / 3600)}h` : `${(sec / DAY).toFixed(1)}d`);
+export function fmtDuration(sec) {
+  if (sec == null) return '—';
+  return sec < DAY ? `${Math.round(sec / 3600)}h` : `${(sec / DAY).toFixed(1)}d`;
+}
 
 export const uniq = (items) => [...new Set(items)];
 

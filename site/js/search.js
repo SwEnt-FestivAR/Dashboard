@@ -3,7 +3,7 @@
 
 import { $, $$, esc, norm } from './core/utils.js';
 import { D, P, repoUrl } from './core/store.js';
-import { avatar } from './core/ui.js';
+import { avatar, listItems } from './core/ui.js';
 
 const MAX_RESULTS = 12;
 
@@ -23,7 +23,11 @@ function buildIndex() {
   const screens = D.units.map((u) => ({ kind: 'Screen', label: u.key, sub: u.feature, href: `#screens/${encodeURIComponent(u.key)}`, icon: '📱' }));
   const people = Object.values(D.people).filter((p) => !p.bot)
     .map((p) => ({ kind: 'Person', label: p.name, sub: `@${p.login}`, href: `#person/${encodeURIComponent(p.login)}`, icon: avatar(p.login, 'xs') }));
-  const prs = D.prs.map((p) => ({ kind: p.s === 'open' ? 'Open PR' : p.m ? 'Merged PR' : 'Closed PR', label: p.title, sub: `#${p.n} · ${P(p.a).name}`, href: repoUrl(`/pull/${p.n}`), icon: '⇄' }));
+  const prKind = (p) => {
+    if (p.s === 'open') return 'Open PR';
+    return p.m ? 'Merged PR' : 'Closed PR';
+  };
+  const prs = D.prs.map((p) => ({ kind: prKind(p), label: p.title, sub: `#${p.n} · ${P(p.a).name}`, href: repoUrl(`/pull/${p.n}`), icon: '⇄' }));
   const issues = D.issues.map((i) => ({ kind: i.s === 'open' ? 'Open issue' : 'Closed issue', label: i.title, sub: `#${i.n}`, href: repoUrl(`/issues/${i.n}`), icon: '◎' }));
   return [...screens, ...people, ...prs, ...issues].map((it) => ({ ...it, text: norm(`${it.label} ${it.sub}`) }));
 }
@@ -36,11 +40,11 @@ function search(query) {
 }
 
 function renderResults() {
-  $('#searchResults').innerHTML = results.map((r, i) => `
+  $('#searchResults').innerHTML = listItems(results, (r, i) => `
     <li class="${i === active ? 'on' : ''}" data-i="${i}">
       <span class="search-icon">${r.icon}</span><span class="title">${esc(r.label)}</span>
       <span class="muted small">${esc(r.sub)}</span><span class="pill">${r.kind}</span>
-    </li>`).join('') || '<li class="empty">No result</li>';
+    </li>`, 'No result');
   $('#searchResults li.on')?.scrollIntoView({ block: 'nearest' });
   for (const li of $$('#searchResults li[data-i]')) li.addEventListener('click', () => go(results[li.dataset.i]));
 }

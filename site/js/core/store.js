@@ -5,7 +5,7 @@
 //            relative to the last data refresh, not to when the page is opened.
 // They are ES module live bindings: set once by initStore() at boot, then only read.
 
-import { DAY, esc, ts } from './utils.js';
+import { DAY, esc, ts, uniq } from './utils.js';
 
 export let D = null;
 export let STATUS = { screens: {} };
@@ -46,3 +46,9 @@ export function ago(t) {
 
 /** Escaped display name of a login. */
 export const nameOf = (login) => esc(P(login).name);
+
+/** An issue counts as solved when closed as completed; issues closed as "not planned" don't. */
+export const isCompleted = (i) => i.s === 'closed' && i.r !== 'not_planned';
+
+/** Logins assigned to any of the issues, without duplicates. */
+export const assigneesOf = (issues) => uniq(issues.flatMap((i) => i.as));

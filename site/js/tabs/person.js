@@ -1,9 +1,9 @@
 // Profile page of one person, reached by the route "#person/<login>" (hidden from the nav):
 // totals, a GitHub-style activity calendar, and their PRs, issues and screens.
 
-import { $, DAY, addWeeks, countBy, esc, fmtDate, fmtNum, plural, ts, weekStart } from '../core/utils.js';
-import { D, NOW, repoUrl } from '../core/store.js';
-import { avatar, extLink, issueRow, kpis, listItems } from '../core/ui.js';
+import { $, DAY, addWeeks, countBy, esc, fmtDate, fmtNum, plural, sumBy, ts, weekStart } from '../core/utils.js';
+import { D, NOW, isCompleted } from '../core/store.js';
+import { avatar, extLink, issueRow, kpis, linesHtml, listItems, prRow } from '../core/ui.js';
 import { unitAssignees } from '../screens/units.js';
 
 const CALENDAR_WEEKS = 20;
@@ -22,8 +22,12 @@ const html = `
     <div class="card"><div class="card-head"><h3>Recently merged PRs</h3></div><ul class="issue-list" id="profileMerged"></ul></div>
   </div>`;
 
-const prRow = (p) => `<li><span class="num">#${p.n}</span>${extLink(repoUrl(`/pull/${p.n}`), esc(p.title), 'title')}
-  <span class="muted small">${p.m ? `merged ${fmtDate(ts(p.m))}` : p.d ? 'draft' : 'ready for review'}</span></li>`;
+/** "merged 7 Nov 2026", "draft" or "ready for review". */
+function prState(p) {
+  if (p.m) return `merged ${fmtDate(ts(p.m))}`;
+  return p.d ? 'draft' : 'ready for review';
+}
+const prWithState = (p) => prRow(p, `<span class="muted small">${prState(p)}</span>`);
 
 /** Role of a person on a screen, or null: "Screen author", "ViewModel author" or "Planned". */
 function screenRole(u, login) {
@@ -43,7 +47,8 @@ function calendar(login) {
     for (let d = 0; d < 7; d++) {
       const t = first + (w * 7 + d) * DAY;
       const n = perDay[Math.floor(t / DAY)] || 0;
-      const level = Math.floor(t / DAY) > Math.floor(NOW / DAY) ? 'future' : `l${n ? Math.ceil((4 * n) / max) : 0}`;
+      const intensity = n ? Math.ceil((4 * n) / max) : 0;
+      const level = Math.floor(t / DAY) > Math.floor(NOW / DAY) ? 'future' : `l${intensity}`;
       days.push(`<i class="${level}" title="${fmtDate(t)}: ${plural(n, 'commit')}"></i>`);
     }
     weeks.push(`<div>${days.join('')}</div>`);
@@ -62,7 +67,7 @@ function render(login) {
   const prs = D.prs.filter((pr) => pr.a === login);
   const merged = prs.filter((pr) => pr.m).sort((a, b) => ts(b.m) - ts(a.m));
   const openIssues = D.issues.filter((i) => i.s === 'open' && i.as.includes(login));
-  const closedIssues = D.issues.filter((i) => i.s === 'closed' && i.r !== 'not_planned' && i.as.includes(login));
+  const closedIssues = D.issues.filter((i) => isCompleted(i) && i.as.includes(login));
   const screens = D.units.map((u) => [u, screenRole(u, login)]).filter(([, role]) => role);
 
   $('#profileHead').innerHTML = `${avatar(login, 'lg')}
@@ -73,14 +78,14 @@ function render(login) {
     ['PRs merged', merged.length],
     ['PRs open', prs.filter((pr) => pr.s === 'open').length],
     ['Issues solved', closedIssues.length],
-    ['Lines changed', `<span class="plus">+${fmtNum(commits.reduce((t, c) => t + c.add, 0))}</span> <span class="minus small">−${fmtNum(commits.reduce((t, c) => t + c.del, 0))}</span>`],
+    ['Lines changed', linesHtml(sumBy(commits, (c) => c.add), sumBy(commits, (c) => c.del))],
   ]);
   $('#profileCalendar').innerHTML = calendar(login);
-  $('#profilePRs').innerHTML = listItems(prs.filter((pr) => pr.s === 'open'), prRow, 'No open PR');
+  $('#profilePRs').innerHTML = listItems(prs.filter((pr) => pr.s === 'open'), prWithState, 'No open PR');
   $('#profileIssues').innerHTML = listItems(openIssues, issueRow, 'No assigned open issue');
   $('#profileScreens').innerHTML = listItems(screens, ([u, role]) =>
     `<li><a class="title" href="#screens/${encodeURIComponent(u.key)}">${esc(u.key)}</a><span class="muted small">${esc(u.feature)}</span><span class="pill">${role}</span></li>`, 'No screen');
-  $('#profileMerged').innerHTML = listItems(merged.slice(0, 10), prRow, 'No merged PR');
+  $('#profileMerged').innerHTML = listItems(merged.slice(0, 10), prWithState, 'No merged PR');
 }
 
 export default { id: 'person', label: 'Profile', hidden: true, html, setup() {}, render };

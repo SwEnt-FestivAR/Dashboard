@@ -1,7 +1,7 @@
 // Review and PR-flow statistics, computed from D.prs (rv and size exist only when the fetch had a token).
 // Self-reviews and bots are ignored everywhere.
 
-import { median, ts, weekStart } from '../core/utils.js';
+import { median, sumBy, ts, weekStart } from '../core/utils.js';
 import { D, P } from '../core/store.js';
 
 /** PR size buckets, by lines added + deleted. */
@@ -84,7 +84,7 @@ export function overview() {
   const waits = D.prs.map(firstReviewWait).filter((w) => w != null);
   const sized = D.prs.filter((p) => p.size != null);
   return {
-    reviews: D.prs.reduce((t, pr) => t + peerReviews(pr).length, 0),
+    reviews: sumBy(D.prs, (pr) => peerReviews(pr).length),
     medianWait: median(waits),
     medianCycle: median(merged.map((p) => ts(p.m) - ts(p.c))),
     unreviewedMerged: merged.filter((p) => p.rv && !peerReviews(p).length).length,

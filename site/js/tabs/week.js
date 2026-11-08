@@ -2,9 +2,9 @@
 // each person's issues and the unassigned ones (week/issues.js), with ← → navigation and a
 // "Copy as Markdown" summary for meetings or Discord.
 
-import { $, $$, DAY, addWeeks, countBy, esc, fmtWeekDay, plural, ts, weekStart } from '../core/utils.js';
-import { D, NOW, P, nameOf, repoUrl } from '../core/store.js';
-import { avatar, extLink, issueRow, kpis, listItems } from '../core/ui.js';
+import { $, $$, DAY, addWeeks, countBy, esc, fmtWeekDay, plural, sumBy, ts, weekStart } from '../core/utils.js';
+import { D, NOW, P, isCompleted, nameOf } from '../core/store.js';
+import { avatar, issueRow, kpis, listItems, prRow } from '../core/ui.js';
 import { issuesByPerson, issuesMarkdown, peopleIssuesHtml, unassignedHtml, unassignedIssues } from '../week/issues.js';
 
 const STALE_DAYS = 3;
@@ -55,7 +55,7 @@ function weekData() {
     current: state.offset === 0,
     merged: D.prs.filter((p) => inWeek(ts(p.m))),
     opened: D.prs.filter((p) => inWeek(ts(p.c))),
-    closed: D.issues.filter((i) => i.s === 'closed' && i.r !== 'not_planned' && inWeek(ts(i.cl))),
+    closed: D.issues.filter((i) => isCompleted(i) && inWeek(ts(i.cl))),
     newScreens: D.units.filter((u) => !u.planned && inWeek(created(u))),
     commits: Object.entries(countBy(D.commits.filter((c) => inWeek(c.t)).map((c) => c.a))).sort((a, b) => b[1] - a[1]),
     stale: D.openPRs.filter((p) => NOW - ts(p.u) > STALE_DAYS * DAY),
@@ -64,25 +64,25 @@ function weekData() {
   };
 }
 
-const prRow = (p) => `<li><span class="num">#${p.n}</span>${extLink(repoUrl(`/pull/${p.n}`), esc(p.title), 'title')}${avatar(p.a, 'sm')}</li>`;
+const prWithAuthor = (p) => prRow(p, avatar(p.a, 'sm'));
 
 function render() {
   const w = weekData();
   $('#weekTitle').textContent = `${fmtWeekDay(w.from)} → ${fmtWeekDay(w.to)}${w.current ? ' (current)' : ''}`;
   $('#weekNav button[data-d="-1"]').disabled = w.current;
   $('#weekKpis').innerHTML = kpis([
-    ['Commits', w.commits.reduce((t, [, n]) => t + n, 0)],
+    ['Commits', sumBy(w.commits, ([, n]) => n)],
     ['PRs merged', w.merged.length],
     ['PRs opened', w.opened.length],
     ['Issues closed', w.closed.length],
     ['New screens', w.newScreens.length],
   ]);
-  $('#weekMerged').innerHTML = listItems(w.merged, prRow, 'No PR merged');
+  $('#weekMerged').innerHTML = listItems(w.merged, prWithAuthor, 'No PR merged');
   $('#weekIssues').innerHTML = listItems(w.closed, issueRow, 'No issue closed');
   $('#weekScreens').innerHTML = listItems(w.newScreens, (u) => `<li><b class="title">${esc(u.key)}</b><span class="muted small">${esc(u.feature)}</span></li>`, 'No new screen');
   $('#weekPeople').innerHTML = listItems(w.commits, ([l, n]) => `<li>${avatar(l, 'sm')}<span class="title">${nameOf(l)}</span><b>${plural(n, 'commit')}</b></li>`, 'No commit');
   $('#weekStaleCard').hidden = !w.current; // "stale" only makes sense for the current week
-  $('#weekStale').innerHTML = listItems(w.stale, prRow, 'No stale PR 🎉');
+  $('#weekStale').innerHTML = listItems(w.stale, prWithAuthor, 'No stale PR 🎉');
   $('#weekPeopleIssues').innerHTML = peopleIssuesHtml(w.people);
   $('#weekUnassigned').innerHTML = unassignedHtml(w.unassigned);
 }

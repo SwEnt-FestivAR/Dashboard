@@ -3,7 +3,7 @@
 //   color segment = in the code, colored by current status (file created → finalized date, or today)
 //   dots          = first issue ◦, file created ●, finalized/frozen ◆ (the `since` date of status.json)
 
-import { DAY, esc, fmtDate, ts } from '../core/utils.js';
+import { DAY, esc, fmtDate, fmtShortDate, ts } from '../core/utils.js';
 import { NOW, STATUS } from '../core/store.js';
 import { statusInfo, unitId, unitIssues, unitStatus } from './units.js';
 
@@ -39,7 +39,7 @@ export function timelineHtml(units) {
   const x = (t) => `${(100 * (t - from)) / (to - from)}%`;
   const span = (a, b) => `left:${x(a)};width:calc(${x(b)} - ${x(a)})`;
 
-  const axis = ticks(from, to).map((t) => `<span style="left:${x(t)}">${fmtDate(t).replace(/ \d{4}$/, '')}</span>`).join('');
+  const axis = ticks(from, to).map((t) => `<span style="left:${x(t)}">${fmtShortDate(t)}</span>`).join('');
   let feature = null;
   const body = rows.map(({ u, m }) => {
     const color = `var(${statusInfo(m.status).css})`;

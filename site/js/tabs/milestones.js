@@ -3,7 +3,7 @@
 
 import { $, $$, countBy, esc, fmtDate, seg, ts } from '../core/utils.js';
 import { D, NOW } from '../core/store.js';
-import { issueRow, peopleBarChart } from '../core/ui.js';
+import { issueRow, listItems, peopleBarChart } from '../core/ui.js';
 
 const state = {
   selected: null,     // title of the selected milestone
@@ -48,7 +48,8 @@ function milestones() {
     m.closed = issues.filter((i) => i.s === 'closed').length;
     m.total = issues.length;
   }
-  return list.sort((a, b) => (a.state === b.state ? a.title.localeCompare(b.title) : a.state === 'open' ? -1 : 1));
+  const openFirst = (m) => (m.state === 'open' ? 0 : 1);
+  return list.sort((a, b) => openFirst(a) - openFirst(b) || a.title.localeCompare(b.title));
 }
 
 function render() {
@@ -61,27 +62,31 @@ function render() {
   peopleBarChart('loadChart', Object.entries(countBy(open.flatMap((i) => i.as))).sort((a, b) => b[1] - a[1]));
   const unassigned = open.filter((i) => !i.as.length);
   $('#unassignedCount').textContent = unassigned.length;
-  $('#unassigned').innerHTML = unassigned.map(issueRow).join('') || '<li class="empty">Every open issue has an owner 🎉</li>';
+  $('#unassigned').innerHTML = listItems(unassigned, issueRow, 'Every open issue has an owner 🎉');
   renderIssues();
+}
+
+/** Due date of a milestone, in red when it is past and the milestone is still open. */
+function dueLabel(m) {
+  const due = ts(m.due);
+  if (!due) return '';
+  if (due < NOW && m.state === 'open') return `<span class="pill bad">overdue · ${fmtDate(due)}</span>`;
+  return `<span class="muted small">due ${fmtDate(due)}</span>`;
 }
 
 function milestoneCard(m) {
   const pct = m.total ? Math.round((100 * m.closed) / m.total) : 0;
-  const due = ts(m.due);
-  const dueText = !due ? ''
-    : due < NOW && m.state === 'open' ? `<span class="pill bad">overdue · ${fmtDate(due)}</span>`
-      : `<span class="muted small">due ${fmtDate(due)}</span>`;
   return `<div class="card ms ${state.selected === m.title ? 'on' : ''}" data-ms="${esc(m.title)}">
     <h3>${esc(m.title)} <span class="pill ${m.state === 'open' ? 'info' : 'ok'}">${m.state}</span></h3>
     <div class="progress"><div style="width:${pct}%"></div></div>
-    <div class="ms-foot"><span><b>${pct}%</b> <span class="muted small">${m.closed} closed / ${m.total}</span></span>${dueText}</div>
+    <div class="ms-foot"><span><b>${pct}%</b> <span class="muted small">${m.closed} closed / ${m.total}</span></span>${dueLabel(m)}</div>
   </div>`;
 }
 
 function renderIssues() {
   const list = issuesOf(state.selected).filter((i) => i.s === state.issueState);
   $('#msIssuesTitle').textContent = `Issues · ${state.selected || ''} (${list.length})`;
-  $('#msIssues').innerHTML = list.map(issueRow).join('') || '<li class="empty">No issue</li>';
+  $('#msIssues').innerHTML = listItems(list, issueRow, 'No issue');
 }
 
 export default { id: 'milestones', label: 'Milestones', html, setup, render };

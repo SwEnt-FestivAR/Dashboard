@@ -1,8 +1,8 @@
 // HTML of one screen card: header (name + status badge), Screen and ViewModel blocks, footer (issues,
 // tests, PRs, note) and the expandable list of open issues.
 
-import { esc, fmtDate, plural, ts, uniq } from '../core/utils.js';
-import { D, P, ago, nameOf, repoUrl } from '../core/store.js';
+import { esc, fmtDate, plural, ts } from '../core/utils.js';
+import { D, P, ago, assigneesOf, nameOf, repoUrl } from '../core/store.js';
 import { avatar, avatars, extLink, issueRow } from '../core/ui.js';
 import { statusInfo, unitId, unitIssues, unitStatus } from './units.js';
 
@@ -30,7 +30,7 @@ export function screenCard(u, expanded) {
 
 function issuesButton(u, issues, expanded) {
   if (!issues.length) return '<span class="pill">no open issue</span>';
-  const assignees = uniq(issues.flatMap((i) => i.as));
+  const assignees = assigneesOf(issues);
   return `<button class="issues-btn ${expanded ? 'on' : ''}" data-id="${esc(unitId(u))}" title="Show the open issues about this screen">
     ${expanded ? '▾' : '▸'} ${plural(issues.length, 'open issue')}
     ${assignees.length ? avatars(assignees) : '<span class="minus small">unassigned</span>'}</button>`;
@@ -87,7 +87,7 @@ function fileBlock(f, kind) {
 function plannedBlock(u, slot, kind) {
   const issues = u.plannedIssues[slot].map((n) => D.issues.find((i) => i.n === n));
   if (!issues.length) return `<div class="block missing">No issue for the ${kind} yet</div>`;
-  const assignees = uniq(issues.flatMap((i) => i.as));
+  const assignees = assigneesOf(issues);
   const who = assignees.length
     ? `${avatars(assignees, '')}<div><span class="muted small">Planned by</span><b>${assignees.map((a) => esc(P(a).name)).join(', ')}</b></div>`
     : '<span class="minus small">Nobody assigned yet</span>';

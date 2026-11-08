@@ -2,7 +2,7 @@
 // also complex (the best refactoring candidates; score computed in scripts/lib/repo.mjs), with their main
 // owner and a warning when one person owns almost everything.
 
-import { $, $$, esc, plural } from '../core/utils.js';
+import { $, $$, esc, plural, sumBy } from '../core/utils.js';
 import { D, P, ago, repoUrl } from '../core/store.js';
 import { avatar, extLink } from '../core/ui.js';
 import { navGraphSvg } from '../code/nav-graph.js';
@@ -57,7 +57,7 @@ function renderNavGraph() {
 }
 
 function hotspotRow(h, rank, maxScore) {
-  const total = h.authors.reduce((t, a) => t + a.n, 0);
+  const total = sumBy(h.authors, (a) => a.n);
   const owner = h.authors[0];
   const share = owner.n / total;
   const dir = h.f.split('/').slice(-3, -1).join('/');

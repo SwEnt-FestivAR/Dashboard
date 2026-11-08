@@ -1,7 +1,7 @@
 // Reusable HTML pieces and chart helpers shared by several tabs.
 // Each function returns an HTML string (or draws a chart); callers insert it with innerHTML.
 
-import { $, css, esc, ts } from './utils.js';
+import { $, css, esc, fmtNum, ts } from './utils.js';
 import { P, ago, color, nameOf, repoUrl } from './store.js';
 
 /** Round avatar. `hint` is prepended to the tooltip, e.g. "12 commits · ". Sizes: '' (34px), 'sm', 'xs'. */
@@ -24,6 +24,15 @@ export function kpis(items) {
 
 /** <li> items of a list built with `row`, or a single "empty" item with the `empty` text. */
 export const listItems = (items, row, empty) => items.map(row).join('') || `<li class="empty">${empty}</li>`;
+
+/** "+120 −45" in green and red. */
+export const linesHtml = (add, del) => `<span class="plus">+${fmtNum(add)}</span> <span class="minus">−${fmtNum(del)}</span>`;
+
+/** Link to a PR showing "#12 Title", for cards. */
+export const prLink = (p) => extLink(repoUrl(`/pull/${p.n}`), `<span class="muted">#${p.n}</span> ${esc(p.title)}`, 't');
+
+/** One <li> of an .issue-list for a PR: number, title link, then `extra` HTML (avatar, status…). */
+export const prRow = (p, extra = '') => `<li><span class="num">#${p.n}</span>${extLink(repoUrl(`/pull/${p.n}`), esc(p.title), 'title')}${extra}</li>`;
 
 /** One <li> of an .issue-list: number, title, labels, assignees, age. */
 export function issueRow(i) {

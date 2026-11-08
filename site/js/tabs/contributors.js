@@ -1,8 +1,8 @@
 // Contributors tab: KPIs, one card per person, and charts, filtered by period.
 
-import { $, $$, DAY, addWeeks, esc, fmtNum, seg, toggle, ts, weekStart } from '../core/utils.js';
-import { D, NOW, P, color, nameOf } from '../core/store.js';
-import { avatar, chart, clearChart, kpis, peopleBarChart } from '../core/ui.js';
+import { $, $$, DAY, addWeeks, esc, fmtNum, fmtShortDate, seg, sumBy, toggle, ts, weekStart } from '../core/utils.js';
+import { D, NOW, P, color, isCompleted, nameOf } from '../core/store.js';
+import { avatar, chart, clearChart, kpis, linesHtml, peopleBarChart } from '../core/ui.js';
 
 const state = {
   days: 0,              // period filter, 0 = all time
@@ -79,7 +79,7 @@ function computeStats() {
     if (pr.s === 'open') st[pr.a].open++;
   }
   for (const i of D.issues) {
-    if (i.s !== 'closed' || i.r === 'not_planned' || ts(i.cl) < from) continue;
+    if (!isCompleted(i) || ts(i.cl) < from) continue;
     for (const a of i.as) if (st[a]) st[a].issues++;
   }
   return Object.values(st)
@@ -87,8 +87,7 @@ function computeStats() {
     .sort((a, b) => b.commits - a.commits);
 }
 
-const sum = (stats, key) => stats.reduce((t, s) => t + s[key], 0);
-const lines = (add, del) => `<span class="plus">+${fmtNum(add)}</span> <span class="minus">−${fmtNum(del)}</span>`;
+const sum = (stats, key) => sumBy(stats, (s) => s[key]);
 
 function render() {
   const stats = computeStats();
@@ -98,7 +97,7 @@ function render() {
     ['PRs merged', fmtNum(sum(stats, 'merged')), period],
     ['PRs open', fmtNum(sum(stats, 'open')), 'right now'],
     ['Issues solved', fmtNum(sum(stats, 'issues')), period],
-    ['Lines changed', lines(sum(stats, 'add'), sum(stats, 'del')), period],
+    ['Lines changed', linesHtml(sum(stats, 'add'), sum(stats, 'del')), period],
   ]);
   $('#peopleCards').innerHTML = stats.map(personCard).join('') || '<div class="empty">No activity in this period</div>';
   for (const el of $$('.person')) {
@@ -121,7 +120,7 @@ function personCard(s, rank) {
   return `<div class="person ${dim}" style="--c:${color(s.login)}" data-login="${esc(s.login)}" title="Click to focus the charts on this person">
     <div class="who">${avatar(s.login)}<div><b>${nameOf(s.login)}</b><span class="muted small">@${esc(s.login)}</span></div><span class="rank">#${rank + 1}</span></div>
     <div class="stats">${stat(s.commits, 'commits')}${stat(s.merged, 'merged')}${stat(s.open, 'open PRs')}${stat(s.issues, 'issues')}</div>
-    <div class="loc">${lines(s.add, s.del)}<a href="#person/${encodeURIComponent(s.login)}">Profile →</a></div>
+    <div class="loc">${linesHtml(s.add, s.del)}<a href="#person/${encodeURIComponent(s.login)}">Profile →</a></div>
   </div>`;
 }
 
@@ -159,7 +158,7 @@ function renderWeeklyChart(logins) {
   chart('timeChart', {
     type: 'bar',
     data: {
-      labels: weeks.map((w) => new Date(w * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })),
+      labels: weeks.map((w) => fmtShortDate(w)),
       datasets: logins.map((l) => ({ label: P(l).name, data: series[l], backgroundColor: color(l), borderRadius: 3 })),
     },
     options: {

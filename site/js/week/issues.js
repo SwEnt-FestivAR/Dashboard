@@ -3,13 +3,11 @@
 // to, split into user stories and tasks. Also their part of the "Copy as Markdown" summary.
 
 import { esc, plural, ts } from '../core/utils.js';
-import { D, P, nameOf, repoUrl } from '../core/store.js';
+import { D, P, isCompleted, nameOf, repoUrl } from '../core/store.js';
 import { avatar, extLink, listItems } from '../core/ui.js';
 
 /** User stories carry the "user story" label or a "US-12: …" title; every other issue is a task. */
 const isUserStory = (i) => i.labels.some((l) => l.name.toLowerCase() === 'user story') || /^US-\d+/i.test(i.title);
-
-const completed = (i) => i.s === 'closed' && i.r !== 'not_planned';
 
 /**
  * Per person (bots excluded): { login, open: issues assigned now, closed: issues closed in [from, to) }.
@@ -21,7 +19,7 @@ export function issuesByPerson(from, to) {
   for (const i of D.issues) {
     for (const login of i.as.filter((l) => !P(l).bot)) {
       if (i.s === 'open') of(login).open.push(i);
-      else if (completed(i) && ts(i.cl) >= from && ts(i.cl) < to) of(login).closed.push(i);
+      else if (isCompleted(i) && ts(i.cl) >= from && ts(i.cl) < to) of(login).closed.push(i);
     }
   }
   const load = (p) => p.open.length + p.closed.length;

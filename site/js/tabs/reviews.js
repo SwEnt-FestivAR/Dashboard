@@ -2,7 +2,7 @@
 // Review data needs a token: the automatic GITHUB_TOKEN of GitHub Actions provides it on the deployed site
 // (nothing to configure). Cycle time works without it.
 
-import { $, esc, fmtDuration } from '../core/utils.js';
+import { $, esc, fmtDuration, fmtShortDate } from '../core/utils.js';
 import { D, P } from '../core/store.js';
 import { avatar, chart, kpis, peopleBarChart } from '../core/ui.js';
 import { SIZES, overview, reviewMatrix, reviewerStats, weeklyCycleTime } from '../reviews/stats.js';
@@ -71,7 +71,7 @@ function renderCycleChart() {
   chart('cycleChart', {
     type: 'line',
     data: {
-      labels: weeks.map((w) => new Date(w.week * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })),
+      labels: weeks.map((w) => fmtShortDate(w.week)),
       datasets: [{ data: weeks.map((w) => +(w.cycle / 86400).toFixed(2)), borderColor: '#6d4aff', backgroundColor: 'rgba(109,74,255,.15)', fill: true, tension: 0.3 }],
     },
     options: {

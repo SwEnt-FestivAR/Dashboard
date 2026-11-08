@@ -1,8 +1,8 @@
 // Screen "units" (a Screen + ViewModel pair, see the schema in scripts/fetch-data.mjs): statuses,
 // linked issues and planned screens. Pure logic, no HTML except the status bar.
 
-import { DAY, norm, ts, uniq } from '../core/utils.js';
-import { D, STATUS } from '../core/store.js';
+import { DAY, norm, ts } from '../core/utils.js';
+import { D, STATUS, assigneesOf } from '../core/store.js';
 
 /**
  * Screen statuses, in progress order. `css` names the color variable in style.css (:root).
@@ -59,7 +59,7 @@ export function unitIssues(u, includeClosed = false) {
 }
 
 /** Logins assigned to the open issues of a unit. */
-export const unitAssignees = (u) => uniq(unitIssues(u).flatMap((i) => i.as));
+export const unitAssignees = (u) => assigneesOf(unitIssues(u));
 
 const PLANNED_RE = /\b(?:the|a|an)\s+([a-z][a-z0-9 ]{1,60}?)\s+(screen|viewmodel)s?\b/i;
 const FILLER_WORDS = /\b(?:the|a|an|to|of|in|for|on|with)\b/i;
