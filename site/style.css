@@ -245,7 +245,10 @@ dialog.search input { width: 100%; border: 0; border-bottom: 1px solid var(--bor
 .pi-box.closed .pi-box-head { color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, var(--surface)); }
 .pi-box .issue-list { padding: 0 8px; max-height: 220px; }
 .pi-box .issue-list li:last-child { border-bottom: 0; }
-@media (max-width: 520px) { .people-issues { grid-template-columns: 1fr; } }
+@media (max-width: 520px) {
+  .people-issues { grid-template-columns: 1fr; }
+  .search-btn kbd { display: none; } /* no keyboard shortcut on phones */
+}
 .week-title { font-size: 18px; margin-right: auto; }
 .seg button:disabled { opacity: .35; cursor: default; }
 .ms-foot { display: flex; justify-content: space-between; align-items: center; }
