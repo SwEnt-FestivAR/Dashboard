@@ -43,9 +43,9 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
         ├── main.js              entry: load JSON, build nav + sections from the registry, hash routing, theme
         ├── search.js            global Ctrl+K search palette
         ├── core/                shared, tab-agnostic code
-        │   ├── utils.js         generic helpers (DOM, escaping, dates, numbers, sets). Knows nothing about the data
-        │   ├── store.js         the loaded data (D, STATUS, NOW) + data-aware helpers (people, links, ago)
-        │   └── ui.js            reusable HTML pieces (avatar, kpis, issueRow, listItems…) + chart helpers
+        │   ├── utils.js         generic helpers (DOM, escaping, dates and weeks, numbers, sumBy, sets). Knows nothing about the data
+        │   ├── store.js         the loaded data (D, STATUS, NOW) + data-aware helpers (people, links, ago, isCompleted, assigneesOf)
+        │   └── ui.js            reusable HTML pieces (avatar, kpis, issueRow, prRow, prLink, linesHtml, listItems…) + chart helpers
         ├── screens/             domain code of the Screens tab
         │   ├── units.js         statuses, linked issues, planned screens (pure logic)
         │   ├── card.js          HTML of one screen card
@@ -70,7 +70,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
             └── person.js        profile page, hidden from the nav, route #person/<login>
 ```
 
-Generated, git-ignored, **never committed**: `site/data.json`, `site/status.json` (copied at deploy time), `site/history.json` (copied from the `data` branch at deploy time), `festivar/` (the clone) and `.cache/`.
+`.gitignore` lists them. Generated, git-ignored, **never committed**: `site/data.json`, `site/status.json` (copied at deploy time), `site/history.json` (copied from the `data` branch at deploy time), `festivar/` (the clone) and `.cache/`.
 
 **The `data` branch** is an orphan branch holding only `history.json`, one small snapshot per day. Only the workflow writes it (`scripts/snapshot.mjs`, then a commit by `github-actions[bot]`). Never merge it into `main`, and never edit it by hand except to fix a corrupted entry. If you add a field to the snapshot, the site must still handle older entries that lack it.
 
@@ -136,6 +136,7 @@ export default {
   - finalized and frozen are manual only, set in `status.json`. A frozen screen shows a warning if it changes after `since` or an open PR touches it.
 - **Hotspots** (`hotspots()` in `scripts/lib/repo.mjs`): score = heat × log2(1 + complexity). heat = recency-weighted activity (each change halved every 14 days, weighted by log of lines changed); complexity = sum of indentation levels of code lines. Change the half-life or the formula there, and update the explanation text in `tabs/code.js`.
 - **Navigation graph**: `navigationGraph()` in `scripts/lib/repo.mjs` reads the `AppScreens` enum (nodes) and the `navigate()` / `popBackStack()` calls of `class XNavigator` files (edges). If FestivAR changes this convention, update that function. On the site, columns and rows are ordered by distance from the start screen.
+- **Solved issues** (`isCompleted` in `core/store.js`): closed as completed. Issues closed as "not planned" never count as solved (Contributors, This week, Profile).
 - **User stories vs tasks** (`isUserStory` in `week/issues.js`): an issue is a user story if it has the "user story" label or a title starting with `US-<number>`; every other issue is a task.
 - **Issues of a screen** (`unitIssues`) = open issues whose normalized title contains the screen key, plus the numbers listed in `status.json → screens[id].issues`.
 - **Planned screens** (`plannedUnits`) are derived in the browser, in the Screens tab `setup()`, from open issue titles such as "… the X Screen/ViewModel". One is created only when no unit named X exists yet. When a PR creates the file, the real unit replaces it automatically.
