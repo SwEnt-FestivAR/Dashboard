@@ -35,22 +35,24 @@ export function unassignedIssues() {
 const issueLine = (i) => `<li><span class="num">#${i.n}</span>${extLink(repoUrl(`/issues/${i.n}`), esc(i.title), 'title')}
   ${isUserStory(i) ? '<span class="pill info">US</span>' : ''}</li>`;
 
-/** One block per person with their assigned issues and the ones they closed this week. */
+/** A framed list with a header and a count. `tone` colors the header: "open", "closed" or "" (neutral). */
+const issueBox = (title, items, empty, tone = '') => `<div class="pi-box ${tone}">
+  <div class="pi-box-head">${title}<span class="pill">${items.length}</span></div>
+  <ul class="issue-list">${listItems(items, issueLine, empty)}</ul></div>`;
+
+/** One block per person, with two boxes: the issues assigned to them now and the ones they closed this week. */
 export function peopleIssuesHtml(people) {
   if (!people.length) return '<div class="empty">Nobody has assigned issues</div>';
   return people.map((p) => `<div class="pi-person">
-    <div class="pi-head">${avatar(p.login, 'sm')}<b>${nameOf(p.login)}</b>
-      <span class="pill">${p.open.length} open</span><span class="pill ok">${p.closed.length} closed this week</span></div>
-    <h4>Assigned now</h4><ul class="issue-list">${listItems(p.open, issueLine, 'Nothing assigned')}</ul>
-    <h4>Closed this week</h4><ul class="issue-list">${listItems(p.closed, issueLine, 'Nothing closed')}</ul>
+    <div class="pi-head">${avatar(p.login, 'sm')}<b>${nameOf(p.login)}</b></div>
+    ${issueBox('Assigned now', p.open, 'Nothing assigned', 'open')}
+    ${issueBox('Closed this week', p.closed, 'Nothing closed', 'closed')}
   </div>`).join('');
 }
 
-/** Two columns: unassigned user stories and unassigned tasks. */
+/** Two boxes side by side: unassigned user stories and unassigned tasks. */
 export function unassignedHtml({ stories, tasks }) {
-  const column = (title, items) => `<div><h4>${title} <span class="pill">${items.length}</span></h4>
-    <ul class="issue-list">${listItems(items, issueLine, 'None 🎉')}</ul></div>`;
-  return column('User stories', stories) + column('Tasks', tasks);
+  return issueBox('User stories', stories, 'None 🎉') + issueBox('Tasks', tasks, 'None 🎉');
 }
 
 /** Markdown of both sections, for the weekly summary. */

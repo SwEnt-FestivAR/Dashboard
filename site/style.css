@@ -236,10 +236,15 @@ dialog.search input { width: 100%; border: 0; border-bottom: 1px solid var(--bor
 /* This week: issues per person */
 .people-issues { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
 .pi-person { border: 1px solid var(--border); border-radius: 12px; padding: 12px; min-width: 0; }
-.pi-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
-.pi-head b { margin-right: auto; }
-.pi-person h4, #weekUnassigned h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 10px 0 2px; }
-.pi-person .issue-list { max-height: 220px; }
+.pi-head { display: flex; align-items: center; gap: 8px; }
+.pi-box { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-top: 10px; }
+#weekUnassigned .pi-box { margin-top: 0; }
+.pi-box-head { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid var(--border);
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--surface2); }
+.pi-box.open .pi-box-head { color: var(--info); background: color-mix(in srgb, var(--info) 10%, var(--surface)); }
+.pi-box.closed .pi-box-head { color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, var(--surface)); }
+.pi-box .issue-list { padding: 0 8px; max-height: 220px; }
+.pi-box .issue-list li:last-child { border-bottom: 0; }
 @media (max-width: 520px) { .people-issues { grid-template-columns: 1fr; } }
 .week-title { font-size: 18px; margin-right: auto; }
 .seg button:disabled { opacity: .35; cursor: default; }
