@@ -45,7 +45,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
         ├── core/                shared, tab-agnostic code
         │   ├── utils.js         generic helpers (DOM, escaping, dates and weeks, numbers, sumBy, sets). Knows nothing about the data
         │   ├── store.js         the loaded data (D, STATUS, NOW) + data-aware helpers (people, links, ago, isCompleted, assigneesOf)
-        │   └── ui.js            reusable HTML pieces (avatar, kpis, issueRow, prRow, prLink, linesHtml, listItems…) + chart helpers
+        │   └── ui.js            reusable HTML pieces (card, listCard, chartCard, avatar, kpis, issueRow, prRow…) + chart helpers (chart, chartOptions)
         ├── screens/             domain code of the Screens tab
         │   ├── units.js         statuses, linked issues, planned screens (pure logic)
         │   ├── card.js          HTML of one screen card
@@ -152,13 +152,13 @@ export default {
 2. Import it in `site/js/tabs/index.js` and add it to `TABS` where it should appear in the nav.
 3. Nothing else: `index.html` and `main.js` build the nav and the section from the registry.
 
-**Add a section, card or chart to an existing tab:** add its markup to the tab's `html`, then fill it in `render()`. If a piece of HTML is used by two tabs, move it to `core/ui.js`.
+**Add a section, card or chart to an existing tab:** add its markup to the tab's `html` with the card helpers of `core/ui.js` (`card(title, body, sub)`, `listCard(title, listId, sub)`, `chartCard(title, canvasId, sub, tall)`), then fill it in `render()`. If a piece of HTML is used by two tabs, move it to `core/ui.js`.
 
-**Add a chart:** put a `<canvas id>` inside a `.chart-box` (which gives it its height). Then:
+**Add a chart:** add a `chartCard(…)` (a `<canvas id>` in a `.chart-box`, which gives it its height). Then:
 - use `peopleBarChart(id, [[login, value]])` for per-person bars;
-- otherwise use `chart(id, config)`, never `new Chart`: `chart()` destroys the old instance and applies theme colors;
-- use `clearChart(id)` when there is nothing to draw;
-- use `color(login)` so a person has the same color everywhere.
+- otherwise use `chart(id, { type, data, options: chartOptions({ legend, stacked, integers, tooltip }) })`, never `new Chart`: `chart()` destroys the old instance and applies theme colors, `chartOptions()` gives every chart the same look;
+- take series colors from the theme (`css('--ok')`, `css('--accent')`…), or `color(login)` so a person has the same color everywhere; never hex codes;
+- use `clearChart(id)` when there is nothing to draw.
 
 **Add a field to the data**
 1. Compute it in the right module of `scripts/lib/` (or a new one), and add it to `data` in `scripts/fetch-data.mjs`.
