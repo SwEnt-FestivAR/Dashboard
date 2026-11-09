@@ -13,6 +13,7 @@ const html = `
   <div class="kpis" id="prKpis"></div>
   <div class="toolbar">
     <select id="prAuthor"><option value="">All authors</option></select>
+    <select id="prReviewer"><option value="">All reviewers</option></select>
     <label class="check"><input type="checkbox" id="staleOnly"> Stale only (&gt; ${STALE_DAYS} days without activity)</label>
   </div>
   <div class="kanban" id="kanban"></div>`;
@@ -44,7 +45,9 @@ const column = (title, cards, sub = '') => `<div class="col">
 
 function setup() {
   fillPeopleSelect('#prAuthor', uniq(D.openPRs.map((p) => p.a)).sort());
-  for (const sel of ['#prAuthor', '#staleOnly']) $(sel).addEventListener('input', () => render());
+  const shown = [...D.openPRs, ...(D.hasToken ? approvedThisWeek() : [])];
+  fillPeopleSelect('#prReviewer', uniq(shown.flatMap((p) => reviewersOf(p.n).map((r) => r.login))).sort());
+  for (const sel of ['#prAuthor', '#prReviewer', '#staleOnly']) $(sel).addEventListener('input', () => render());
 }
 
 function render() {
@@ -60,8 +63,10 @@ function render() {
     ['Average age', `${avgAgeDays.toFixed(1)} d`],
   ]);
 
-  const author = $('#prAuthor').value, staleOnly = $('#staleOnly').checked;
-  const keep = (p) => (!author || p.a === author) && (!staleOnly || (p.s === 'open' && isStale(p)));
+  const author = $('#prAuthor').value, reviewer = $('#prReviewer').value, staleOnly = $('#staleOnly').checked;
+  const keep = (p) => (!author || p.a === author)
+    && (!reviewer || reviewersOf(p.n).some((r) => r.login === reviewer))
+    && (!staleOnly || (p.s === 'open' && isStale(p)));
   const approvedNumbers = new Set(approved.map((p) => p.n));
   const open = all.filter((p) => keep(p) && !approvedNumbers.has(p.n));
   const cols = columns().map(([title, inColumn]) =>
