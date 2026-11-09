@@ -7,7 +7,10 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: '0 5 * * *' # every day at 05:00 UTC
+    # Hourly, except 01:30-07:30 Swiss time (see the gate job). Cron is in UTC and Switzerland is UTC+1 in winter,
+    # UTC+2 in summer: 01:00-05:00 UTC is quiet in both, the gate drops the other quiet hour. Same-day runs replace
+    # today's snapshot.
+    - cron: '0 0,6-23 * * *'
   workflow_dispatch:
 
 permissions:
@@ -20,7 +23,27 @@ concurrency:
   cancel-in-progress: false # never stop a run in the middle of saving the history
 
 jobs:
+  # Skips scheduled runs that start between 01:30 and 07:30 in Switzerland (handles summer time).
+  # Pushes and manual runs always go through.
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      ok: ${{ steps.hour.outputs.ok }}
+    steps:
+      - id: hour
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          now=$((10#$(TZ=Europe/Zurich date +%H%M)))  # e.g. 0745 -> 745
+          if [ "$EVENT" = schedule ] && [ "$now" -ge 130 ] && [ "$now" -lt 730 ]; then
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
+    needs: gate
+    if: needs.gate.outputs.ok == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
