@@ -21,8 +21,21 @@ function peerReviews(pr) {
 /** Times (unix) of the peer approvals of a PR, oldest first. Empty without review data. */
 export const approvalTimes = (pr) => peerReviews(pr).filter((r) => r.state === 'A').map((r) => r.t);
 
-/** Logins of the people who approved a PR. */
-export const approvers = (pr) => [...new Set(peerReviews(pr).filter((r) => r.state === 'A').map((r) => r.login))];
+/**
+ * Who reviews a PR (number n), as [{ login, state }]: everyone who reviewed it with their latest verdict
+ * ("A" approved, "C" changes requested, "R" commented — a later comment does not cancel a verdict), plus the
+ * reviewers GitHub still waits for ("requested", which wins: a re-requested review is pending again).
+ * Submitted reviews need the token; requested reviewers are always known for open PRs.
+ */
+export function reviewersOf(n) {
+  const latest = {};
+  for (const r of peerReviews(D.prs.find((p) => p.n === n) || {})) {
+    if (r.state === 'D') continue; // dismissed reviews don't count
+    latest[r.login] = r.state === 'R' && latest[r.login] ? latest[r.login] : r.state;
+  }
+  for (const login of D.openPRs.find((p) => p.n === n)?.reviewers || []) latest[login] = 'requested';
+  return Object.entries(latest).map(([login, state]) => ({ login, state }));
+}
 
 /** Seconds from opening a PR to its first peer review (null when never reviewed). */
 const firstReviewWait = (pr) => {

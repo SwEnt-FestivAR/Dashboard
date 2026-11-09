@@ -55,7 +55,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
         ├── week/
         │   └── issues.js        This week: issues per person, unassigned user stories / tasks (+ their Markdown)
         ├── reviews/
-        │   └── stats.js         review / cycle time / PR size statistics, peer approvals (pure logic)
+        │   └── stats.js         review / cycle time / PR size statistics, peer approvals, reviewers of a PR (pure logic)
         ├── code/
         │   └── nav-graph.js     SVG of the navigation graph (hand-made layout)
         └── tabs/                one module per tab

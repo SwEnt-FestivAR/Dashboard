@@ -4,8 +4,8 @@
 
 import { $, DAY, addWeeks, esc, fmtWeekDay, sumBy, ts, uniq, weekStart } from '../core/utils.js';
 import { D, NOW, ago, nameOf } from '../core/store.js';
-import { avatar, avatars, fillPeopleSelect, kpis, linesHtml, prLink } from '../core/ui.js';
-import { approvalTimes, approvers } from '../reviews/stats.js';
+import { avatar, fillPeopleSelect, kpis, linesHtml, prLink } from '../core/ui.js';
+import { approvalTimes, reviewersOf } from '../reviews/stats.js';
 
 const STALE_DAYS = 3;
 
@@ -77,19 +77,38 @@ const CI_PILLS = {
   pending: '<span class="pill warn">CI …</span>',
 };
 
+// How each review state is shown: [pill class, icon, words for the tooltip]
+const REVIEW_STATES = {
+  A: ['ok', '✓', 'approved'],
+  C: ['bad', '✗', 'requested changes'],
+  R: ['', '💬', 'commented'],
+  requested: ['warn', '⏳', 'review requested, not done yet'],
+};
+
+/** Last row of every card: one pill per reviewer, with their avatar and the state of their review. */
+function reviewersRow(n) {
+  const reviewers = reviewersOf(n);
+  const pills = reviewers.map(({ login, state }) => {
+    const [cls, icon, words] = REVIEW_STATES[state];
+    return `<span class="pill ${cls}" title="${nameOf(login)}: ${words}">${avatar(login, 'xs')}${icon}</span>`;
+  }).join('');
+  return `<div class="row reviewers">Reviewers: ${pills || '<span class="muted">none yet</span>'}</div>`;
+}
+
 /** Card of a PR approved this week: the full open-PR card, or a short card once merged. */
 function approvedCard(p) {
-  const approval = `<div class="row">Approved ${ago(p.approvedAt)} by ${avatars(approvers(p))}</div>`;
+  const approval = `<div class="row">Approved ${ago(p.approvedAt)}</div>`;
   const openPR = D.openPRs.find((o) => o.n === p.n);
   if (openPR) return prCard(openPR, approval);
   return `<div class="pr">
     ${prLink(p)}
     <div class="row">${avatar(p.a, 'xs')} ${nameOf(p.a)} · <span class="pill ok">merged ${ago(ts(p.m))}</span></div>
     ${approval}
+    ${reviewersRow(p.n)}
   </div>`;
 }
 
-/** Card of an open PR; `extra` is appended HTML (e.g. the approval row). */
+/** Card of an open PR; `extra` is HTML added just above the reviewers row (e.g. the approval date). */
 function prCard(p, extra = '') {
   const stale = isStale(p);
   const add = sumBy(p.files, (f) => f.add), del = sumBy(p.files, (f) => f.del);
@@ -99,9 +118,9 @@ function prCard(p, extra = '') {
     <div class="row">${avatar(p.a, 'xs')} ${nameOf(p.a)} · opened ${ago(ts(p.c))}</div>
     <div class="row">${activity} ${CI_PILLS[p.ci] || ''}
       <span>${linesHtml(add, del)} · ${p.files.length} files</span></div>
-    ${p.reviewers.length ? `<div class="row">Review requested: ${avatars(p.reviewers)}</div>` : ''}
     ${p.screens?.length ? `<div class="row">${p.screens.map((s) => `<a class="pill" href="#screens">${esc(s.split('/')[1])}</a>`).join('')}</div>` : ''}
     ${extra}
+    ${reviewersRow(p.n)}
   </div>`;
 }
 
