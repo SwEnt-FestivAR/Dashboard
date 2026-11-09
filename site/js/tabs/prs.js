@@ -114,10 +114,13 @@ function approvedCard(p) {
   </div>`;
 }
 
-/** Pills of the screens a PR touches ("feature/Key"). */
+/** Pills of the screens a PR touches ("feature/Key"), each opening that screen's card in the Screens tab. */
 function screenPills(p) {
   if (!p.screens?.length) return '';
-  const pill = (id) => `<a class="pill" href="#screens">${esc(id.split('/')[1])}</a>`;
+  const pill = (id) => {
+    const key = id.split('/')[1];
+    return `<a class="pill" href="#screens/${encodeURIComponent(key)}">${esc(key)}</a>`;
+  };
   return `<div class="row">${p.screens.map(pill).join('')}</div>`;
 }
 
