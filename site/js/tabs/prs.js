@@ -40,7 +40,8 @@ function approvedThisWeek() {
 }
 
 const column = (title, cards, sub = '') => `<div class="col">
-  <div class="col-head"><span>${title}${sub ? `<br><span class="muted small">${sub}</span>` : ''}</span><span class="pill">${cards.length}</span></div>
+  <div class="col-head"><span>${title}${sub ? `<br><span class="muted small">${sub}</span>` : ''}</span>
+    <span class="pill">${cards.length}</span></div>
   ${cards.join('') || '<div class="empty small">Nothing here</div>'}</div>`;
 
 function setup() {
@@ -113,6 +114,13 @@ function approvedCard(p) {
   </div>`;
 }
 
+/** Pills of the screens a PR touches ("feature/Key"). */
+function screenPills(p) {
+  if (!p.screens?.length) return '';
+  const pill = (id) => `<a class="pill" href="#screens">${esc(id.split('/')[1])}</a>`;
+  return `<div class="row">${p.screens.map(pill).join('')}</div>`;
+}
+
 /** Card of an open PR; `extra` is HTML added just above the reviewers row (e.g. the approval date). */
 function prCard(p, extra = '') {
   const stale = isStale(p);
@@ -123,7 +131,7 @@ function prCard(p, extra = '') {
     <div class="row">${avatar(p.a, 'xs')} ${nameOf(p.a)} · opened ${ago(ts(p.c))}</div>
     <div class="row">${activity} ${CI_PILLS[p.ci] || ''}
       <span>${linesHtml(add, del)} · ${p.files.length} files</span></div>
-    ${p.screens?.length ? `<div class="row">${p.screens.map((s) => `<a class="pill" href="#screens">${esc(s.split('/')[1])}</a>`).join('')}</div>` : ''}
+    ${screenPills(p)}
     ${extra}
     ${reviewersRow(p.n)}
   </div>`;
