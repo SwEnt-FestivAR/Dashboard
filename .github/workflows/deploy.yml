@@ -9,8 +9,8 @@ on:
   schedule:
     # Hourly, except 01:30-07:30 Swiss time (see the gate job). Cron is in UTC and Switzerland is UTC+1 in winter,
     # UTC+2 in summer: 01:00-05:00 UTC is quiet in both, the gate drops the other quiet hour. Same-day runs replace
-    # today's snapshot.
-    - cron: '0 0,6-23 * * *'
+    # today's snapshot. Minute 17, not 0: GitHub delays or drops scheduled runs at the top of the hour, when it is busiest.
+    - cron: '17 0,6-23 * * *'
   workflow_dispatch:
 
 permissions:
