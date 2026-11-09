@@ -31,11 +31,11 @@
  },
  {
   "d": "2026-11-09",
-  "prsOpen": 22,
+  "prsOpen": 23,
   "prsDraft": 5,
-  "issuesOpen": 81,
-  "issuesUnassigned": 29,
-  "issuesClosed": 158,
+  "issuesOpen": 80,
+  "issuesUnassigned": 27,
+  "issuesClosed": 160,
   "screens": {
    "planned": 2,
    "in-dev": 16,
