@@ -65,18 +65,18 @@ export function statusPeriods(u) {
   const firstFile = Math.min(...files.filter(Boolean).map((f) => f.created));
   const merged = Math.max(...files.map((f) => (onMain(f) ? f.created : Infinity)));
   const { status: manual, since } = STATUS.screens[unitId(u)] || {};
-  const manualFrom = statusInfo(manual) ? ts(since) ?? NOW : Infinity;
+  const manualFrom = statusInfo(manual) && since ? ts(since) : Infinity;
   const issueOpen = (t) => issues.some(([c, cl]) => c <= t && t < cl);
   const statusAt = (t) => {
     if (t >= manualFrom) return manual;
     if (t < firstFile) return issueOpen(t) ? 'planned' : null;
     return t < merged || issueOpen(t) ? 'in-dev' : 'developed';
   };
-  const dates = [...issues.flat(), firstFile, merged, manualFrom].filter((t) => t <= NOW);
+  const dates = [...issues.flat(), firstFile, merged, manualFrom].filter((t) => t < NOW);
   const cuts = [...new Set(dates)].sort((a, b) => a - b);
   const periods = [];
   cuts.forEach((from, i) => {
-    const to = cuts[i + 1] ?? NOW, status = statusAt(to > from ? (from + to) / 2 : from);
+    const to = cuts[i + 1] ?? NOW, status = statusAt((from + to) / 2);
     const last = periods.at(-1);
     if (last?.status === status) last.to = to;
     else if (status) periods.push({ status, from, to });
