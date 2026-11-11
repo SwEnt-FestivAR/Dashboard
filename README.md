@@ -21,11 +21,11 @@ Press **Ctrl+K** (or **/**, or click **Search**) anywhere to search screens, peo
 | Status | Meaning | Source |
 |---|---|---|
 | Planned | not in the code yet, only named in an open issue ("Implement the My tasks Screen") | auto |
-| In development | the Screen or the ViewModel is not on `main` yet, **or** an open issue is about it, **or** any branch / open PR touches its files | auto |
-| Developed | Screen and ViewModel on `main`, no open issue about it, no branch or PR touching it | auto |
+| In development | the Screen or the ViewModel is not on `main` yet, **or** an open issue is about it | auto |
+| Developed | Screen and ViewModel on `main`, no open issue about it (open PRs and branches touching it are shown on the card but do not change the status) | auto |
 | Finalized | done and validated by the team | manual |
 
-Hover the status badge of a card to see why a screen is still in development (e.g. "2 open issues, 3 branches or PRs touching it").
+Hover the status badge of a card to see why a screen is still in development (e.g. "ViewModel not on main, 2 open issues").
 
 **Finalized** is the only status set by hand, in [`status.json`](status.json). On the site, click a status badge to get the entry, then paste it into the file:
 

@@ -131,8 +131,8 @@ export default {
 - **Tests** are linked by file name prefix (`CreateTask*Test.kt`): `androidTest/` = UI tests, `test/` = unit tests.
 - **Statuses** (`STATUSES` in `screens/units.js`, in progress order):
   - planned = only named in an open issue
-  - in-dev = Screen or ViewModel missing on main, OR an open issue about it (`unitIssues`), OR any branch / open PR touching its files, even files already on main (`inDevReasons` lists which; the card shows them on hover)
-  - developed = Screen and ViewModel on main, no open issue, no branch or PR touching it
+  - in-dev = Screen or ViewModel missing on main, OR an open issue about it (`unitIssues`) (`inDevReasons` lists which; the card shows them on hover)
+  - developed = Screen and ViewModel on main, no open issue. Branches and open PRs touching files already on main do NOT make a screen in-dev (they are only shown on the card)
   - finalized = manual only, set in `status.json` (with `since`, the date shown on the timeline)
 
   These rules were chosen by the team; tests are shown on the cards but don't affect the status.

@@ -11,8 +11,8 @@ import { D, STATUS, assigneesOf } from '../core/store.js';
  */
 export const STATUSES = [
   { id: 'planned', label: 'Planned', css: '--s-planned', desc: 'Not in the code yet, only mentioned in an open issue' },
-  { id: 'in-dev', label: 'In development', css: '--s-indev', desc: 'Screen or ViewModel missing on main, open issues, or a branch / PR touching it' },
-  { id: 'developed', label: 'Developed', css: '--s-developed', desc: 'Screen and ViewModel on main, no open issue, no branch or PR touching it' },
+  { id: 'in-dev', label: 'In development', css: '--s-indev', desc: 'Screen or ViewModel missing on main, or open issues about it' },
+  { id: 'developed', label: 'Developed', css: '--s-developed', desc: 'Screen and ViewModel on main, no open issue about it' },
   { id: 'finalized', label: 'Finalized', css: '--s-finalized', desc: 'Done and validated by the team (set by hand in status.json)' },
 ];
 /** The STATUSES entry of a status id (undefined for an unknown id). */
@@ -24,16 +24,17 @@ export const unitId = (u) => `${u.feature}/${u.key}`;
 const onMain = (file) => file && !file.inPR && !file.inBranch;
 
 /**
- * Why a screen is still in development (empty when it is not): Screen or ViewModel missing on main, open
- * issues about it, or unmerged work on it in a branch or an open PR (even on files that are already on main).
+ * Why a screen is still in development (empty when it is not): Screen or ViewModel missing on main, or open
+ * issues about it. Branches and open PRs touching files already on main do not count: once both files are
+ * merged and no issue is open, the screen is developed, even while someone improves it (the card still shows
+ * those PRs and branches).
  */
 export function inDevReasons(u) {
-  const issues = unitIssues(u).length, branches = u.branches.length + u.openPRs.length;
+  const issues = unitIssues(u).length;
   return [
     !onMain(u.screen) && 'Screen not on main',
     !onMain(u.viewModel) && 'ViewModel not on main',
     issues && plural(issues, 'open issue'),
-    branches && `${plural(branches, 'branch or PR', 'branches or PRs')} touching it`,
   ].filter(Boolean);
 }
 
