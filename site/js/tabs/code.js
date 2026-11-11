@@ -15,7 +15,7 @@ const html = `
     <div class="card-head"><h3>Navigation graph</h3>
       <label class="check"><input type="checkbox" id="navAll"> Show back &amp; sign-out links</label>
     </div>
-    <p class="muted small">Read from the <code>*Navigator</code> classes of FestivAR. Border = screen status.
+    <p class="muted small">Read from the NavGraph files and <code>*Navigator</code> classes of FestivAR. Border = screen status.
       Hover a screen to highlight its links, click it to open its card.</p>
     <div class="nav-graph-box" id="navGraph"></div>
   </div>
