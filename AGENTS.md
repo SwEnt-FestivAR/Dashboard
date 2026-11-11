@@ -35,7 +35,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
 │   │   ├── repo.mjs             commits, hotspots (from git and files)
 │   │   ├── navigation.mjs       navigation graph (from the NavGraph and Navigator files)
 │   │   └── screens.mjs          screen units from main, open PRs and all branches, with tests
-│   ├── snapshot.mjs             appends today's counts to history.json (data branch); reuses site/js/screens/units.js
+│   ├── snapshot.mjs             writes today's counts to history.json (data branch, last build of the day wins); reuses site/js/screens/units.js
 │   └── serve.mjs                local static server (http://localhost:8080)
 └── site/                        everything that gets published
     ├── index.html               shell only: top bar, empty <nav>, empty <main>, script tags
