@@ -179,9 +179,9 @@ a.pill:hover { text-decoration: none; filter: brightness(1.1); }
 .tl-track { position: relative; height: 26px; border-left: 1px solid var(--border); }
 .tl-track i, .tl-track b, .tl-track span, .tl-today { position: absolute; }
 .tl-bar { top: 9px; height: 8px; }
-.tl-track i:first-of-type { border-radius: 99px 0 0 99px; }
-.tl-track i:last-of-type { border-radius: 0 99px 99px 0; }
-.tl-track i:only-of-type { border-radius: 99px; }
+.tl-bar:first-of-type { border-radius: 99px 0 0 99px; }
+.tl-bar:last-of-type { border-radius: 0 99px 99px 0; }
+.tl-bar:only-of-type { border-radius: 99px; }
 .tl-bar.planned { opacity: .45; }
 .tl-dot { top: 7px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--surface); border: 2px solid var(--muted); }
 .tl-dot.created { background: var(--text); border-color: var(--text); }

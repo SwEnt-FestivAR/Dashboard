@@ -15,16 +15,16 @@ function ticks(from, to) {
   return out;
 }
 
-/** Earliest date of a list of unix dates, or null. */
-const first = (dates) => (dates.length ? Math.min(...dates) : null);
+/** Earliest of a list of unix dates, or null for an empty list. */
+const earliest = (dates) => (dates.length ? Math.min(...dates) : null);
 
 /** HTML of the timeline for the given units (grouped by feature, in the order given). */
 export function timelineHtml(units) {
   const rows = units.map((u) => ({
     u,
     periods: statusPeriods(u),
-    issue: first(unitIssues(u, true).map((i) => ts(i.c))),
-    created: first([u.screen, u.viewModel].filter(Boolean).map((f) => f.created)),
+    issue: earliest(unitIssues(u, true).map((i) => ts(i.c))),
+    created: earliest([u.screen, u.viewModel].filter(Boolean).map((f) => f.created)),
   }));
   const starts = rows.flatMap((r) => [r.periods[0]?.from, r.issue, r.created]).filter(Boolean);
   if (!starts.length) return '<div class="empty">No dates to show</div>';
