@@ -56,7 +56,9 @@ export function navigationGraph(allFiles) {
     const decls = declarations(text);
     const helpers = decls.map((d) => /^(?:private )?fun (\w+)\(/.exec(d)).filter(Boolean).map((m) => [m[1], m.input]);
     for (const block of decls.flatMap((d) => d.split(/\bcomposable\(/).slice(1))) {
-      const from = routeName(ROUTE_RE.exec(block)?.[1] || '');
+      const route = ROUTE_RE.exec(block)?.[1];
+      if (!route) continue; // a destination outside AppScreens is not a node of the graph
+      const from = routeName(route);
       const navigator = actions[/\b(\w+Navigator)\(/.exec(block)?.[1]] || {};
       const links = [
         ...[...block.matchAll(/\bnavigator\.(\w+)/g)].flatMap(([, action]) => navigator[action] || []),
