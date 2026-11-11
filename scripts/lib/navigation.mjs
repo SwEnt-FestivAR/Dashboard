@@ -16,13 +16,21 @@ function calls(code) {
 /** Top-level declarations of a Kotlin file (they start at column 0, as formatted by ktfmt). */
 const declarations = (text) => text.split(/\n(?=\S)/);
 
-/** Actions of every `class XNavigator`: { XNavigator: { action: [links] } }, one action per `val`. */
+/**
+ * Actions of every `class XNavigator`: { XNavigator: { action: [links] } }, one action per `val`. An action
+ * written as an alias of another one (`val onCreated: () -> Unit = onBack`) gets that action's links.
+ */
 function navigatorActions(texts) {
   const out = {};
   for (const decl of texts.flatMap(declarations)) {
     const cls = /^class (\w+Navigator)\b/.exec(decl)?.[1];
     if (!cls) continue;
-    out[cls] = Object.fromEntries(decl.split(/\n\s+val /).slice(1).map((p) => [/^\w+/.exec(p)[0], calls(p)]));
+    const bodies = Object.fromEntries(decl.split(/\n\s+val /).slice(1).map((p) => [/^\w+/.exec(p)[0], p]));
+    const target = (name) => {
+      const alias = /^[^=\n]*=[ \t]*(\w+)[ \t]*(?:\n|$)/.exec(bodies[name])?.[1]; // first line ends with "= otherAction"
+      return alias in bodies && alias !== name ? alias : name;
+    };
+    out[cls] = Object.fromEntries(Object.keys(bodies).map((name) => [name, calls(bodies[target(name)])]));
   }
   return out;
 }
