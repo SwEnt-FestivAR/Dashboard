@@ -31,6 +31,7 @@ export function timelineHtml(units) {
   const from = Math.min(...starts) - DAY, to = NOW + DAY;
   const x = (t) => `${(100 * (t - from)) / (to - from)}%`;
   const span = (a, b) => `left:${x(a)};width:calc(${x(b)} - ${x(a)})`;
+  const dot = (t, cls, label) => (t ? `<b class="tl-dot ${cls}" style="left:${x(t)}" title="${label} · ${fmtDate(t)}"></b>` : '');
 
   const axis = ticks(from, to).map((t) => `<span style="left:${x(t)}">${fmtShortDate(t)}</span>`).join('');
   let feature = null;
@@ -41,9 +42,9 @@ export function timelineHtml(units) {
       return `<i class="tl-bar ${p.status}" style="${span(p.from, p.to)};background:var(${info.css})"
         title="${info.label} · ${fmtDate(p.from)} → ${p.to >= NOW ? 'today' : fmtDate(p.to)}"></i>`;
     }).join('');
-    const dot = (t, cls, label) => (t ? `<b class="tl-dot ${cls}" style="left:${x(t)}" title="${label} · ${fmtDate(t)}"></b>` : '');
+    const now = statusInfo(unitStatus(u).status).label;
     return `${head}<div class="tl-row">
-      <a class="tl-name" href="#screens/${encodeURIComponent(u.key)}" title="${esc(statusInfo(unitStatus(u).status).label)}">${esc(u.key)}</a>
+      <a class="tl-name" href="#screens/${encodeURIComponent(u.key)}" title="${now}">${esc(u.key)}</a>
       <div class="tl-track">${bars}${dot(issue, 'issue', 'First issue')}${dot(created, 'created', 'First file created')}</div></div>`;
   }).join('');
   const legend = STATUSES.map((s) => `<span class="tl-key" style="--c:var(${s.css})">${s.label}</span>`).join('');
