@@ -33,7 +33,8 @@ function navigatorActions(texts) {
  *  - routes = entries of `enum class AppScreens { … }`
  *  - each `composable(route = AppScreens.X…) { … }` of a NavGraph file is screen X. Its links are the
  *    navigator actions it wires (`navigator.onBack`, the navigator being any `class YNavigator`, even one shared
- *    by several screens), plus the navigate() / popBackStack() calls written in the block itself.
+ *    by several screens), plus the navigate() / popBackStack() calls written in the block itself or in the
+ *    file's own helper functions it calls (like RedirectToLogin).
  * popBackStack() without a route goes back to "whatever opened the screen" and cannot be drawn.
  */
 export function navigationGraph(allFiles) {
@@ -44,10 +45,16 @@ export function navigationGraph(allFiles) {
   for (const text of texts) {
     const enumBody = /enum class AppScreens\s*\{([^;}]*)/.exec(text);
     if (enumBody) screens.push(...enumBody[1].split(',').map((s) => s.trim()).filter(Boolean));
-    for (const block of declarations(text).flatMap((d) => d.split(/\bcomposable\(/).slice(1))) {
+    const decls = declarations(text);
+    const helpers = decls.map((d) => /^(?:private )?fun (\w+)\(/.exec(d)).filter(Boolean).map((m) => [m[1], m.input]);
+    for (const block of decls.flatMap((d) => d.split(/\bcomposable\(/).slice(1))) {
       const from = routeName(ROUTE_RE.exec(block)?.[1] || '');
       const navigator = actions[/\b(\w+Navigator)\(/.exec(block)?.[1]] || {};
-      const links = [...[...block.matchAll(/\bnavigator\.(\w+)/g)].flatMap(([, action]) => navigator[action] || []), ...calls(block)];
+      const links = [
+        ...[...block.matchAll(/\bnavigator\.(\w+)/g)].flatMap(([, action]) => navigator[action] || []),
+        ...calls(block),
+        ...helpers.filter(([name]) => block.includes(`${name}(`)).flatMap(([, code]) => calls(code)),
+      ];
       for (const { to, kind } of links) if (to !== from) edges.set(`${from}>${to}>${kind}`, { from, to, kind });
     }
   }
