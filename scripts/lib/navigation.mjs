@@ -9,7 +9,7 @@ const CALL_RE = /\b(navigate|popBackStack)\(\s*AppScreens\.(\w+)/g;
 const routeName = (name) => name[0].toUpperCase() + name.slice(1);
 
 /** Links found in a piece of code: [{ to, kind }], "go" for navigate(AppScreens.X…), "back" for popBackStack(AppScreens.X…). */
-function calls(code) {
+function linksIn(code) {
   return [...code.matchAll(CALL_RE)].map(([, call, target]) => ({ to: routeName(target), kind: call === 'navigate' ? 'go' : 'back' }));
 }
 
@@ -30,9 +30,20 @@ function navigatorActions(texts) {
       const alias = /^[^=\n]*=[ \t]*(\w+)[ \t]*(?:\n|$)/.exec(bodies[name])?.[1]; // first line ends with "= otherAction"
       return alias in bodies && alias !== name ? alias : name;
     };
-    out[cls] = Object.fromEntries(Object.keys(bodies).map((name) => [name, calls(bodies[target(name)])]));
+    out[cls] = Object.fromEntries(Object.keys(bodies).map((name) => [name, linksIn(bodies[target(name)])]));
   }
   return out;
+}
+
+/**
+ * The file's own top-level functions as [name, code], like RedirectToLogin. The `NavGraphBuilder.xGraph`
+ * extensions that hold the composables do not match (their name is preceded by the receiver type).
+ */
+function helperFunctions(decls) {
+  return decls.flatMap((d) => {
+    const name = /^(?:private )?fun (\w+)\(/.exec(d)?.[1];
+    return name ? [[name, d]] : [];
+  });
 }
 
 /**
@@ -54,7 +65,7 @@ export function navigationGraph(allFiles) {
     const enumBody = /enum class AppScreens\s*\{([^;}]*)/.exec(text);
     if (enumBody) screens.push(...enumBody[1].split(',').map((s) => s.trim()).filter(Boolean));
     const decls = declarations(text);
-    const helpers = decls.map((d) => /^(?:private )?fun (\w+)\(/.exec(d)).filter(Boolean).map((m) => [m[1], m.input]);
+    const helpers = helperFunctions(decls);
     for (const block of decls.flatMap((d) => d.split(/\bcomposable\(/).slice(1))) {
       const route = ROUTE_RE.exec(block)?.[1];
       if (!route) continue; // a destination outside AppScreens is not a node of the graph
@@ -62,8 +73,8 @@ export function navigationGraph(allFiles) {
       const navigator = actions[/\b(\w+Navigator)\(/.exec(block)?.[1]] || {};
       const links = [
         ...[...block.matchAll(/\bnavigator\.(\w+)/g)].flatMap(([, action]) => navigator[action] || []),
-        ...calls(block),
-        ...helpers.filter(([name]) => block.includes(`${name}(`)).flatMap(([, code]) => calls(code)),
+        ...linksIn(block),
+        ...helpers.filter(([name]) => block.includes(`${name}(`)).flatMap(([, code]) => linksIn(code)),
       ];
       for (const { to, kind } of links) if (to !== from) edges.set(`${from}>${to}>${kind}`, { from, to, kind });
     }
