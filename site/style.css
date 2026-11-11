@@ -117,7 +117,8 @@ a.pill:hover { text-decoration: none; filter: brightness(1.1); }
 .blocks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .block { padding: 12px 14px; min-width: 0; }
 .block + .block { border-left: 1px solid var(--border); }
-.block .kind { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--muted); display: flex; justify-content: space-between; }
+.block .kind { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--muted); display: flex; justify-content: space-between; align-items: center; gap: 6px; min-width: 0; }
+.block .kind .pill { min-width: 0; overflow: hidden; text-overflow: ellipsis; display: block; letter-spacing: 0; }
 .block .fname { font-family: ui-monospace, monospace; font-size: 12px; margin: 4px 0 10px; word-break: break-all; }
 .block .author { display: flex; align-items: center; gap: 8px; }
 .block .author b { display: block; font-size: 13px; }

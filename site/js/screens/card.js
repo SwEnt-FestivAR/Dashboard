@@ -78,7 +78,7 @@ function fileBlock(f, kind) {
     : `${f.lines} lines · ${plural(f.commits, 'commit')}${f.todos ? ` · <span class="minus">${f.todos} TODO</span>` : ''}<br>
        Last change ${ago(f.lastModified)} by ${nameOf(f.lastAuthor)}`;
   return `<div class="block">
-    <div class="kind"><span>${kind}</span>${elsewhere ? `<span class="pill warn">${elsewhere[1]}</span>` : ''}</div>
+    <div class="kind"><span>${kind}</span>${elsewhere ? `<span class="pill warn" title="${elsewhere[1]}">${elsewhere[1]}</span>` : ''}</div>
     <div class="fname">${extLink(href, esc(f.path.split('/').pop()))}</div>
     <div class="author">${avatar(f.author)}<div><span class="muted small">Initial author</span><b>${nameOf(f.author)}</b></div></div>
     <div class="meta">Created ${fmtDate(f.created)}<br>${history}
