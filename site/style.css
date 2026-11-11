@@ -191,6 +191,8 @@ a.pill:hover { text-decoration: none; filter: brightness(1.1); }
 .timeline { overflow: hidden; }
 .tl-feature { margin: 14px 0 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 .tl-legend { margin-top: 14px; }
+.tl-key { display: inline-flex; align-items: center; gap: 5px; margin-right: 10px; }
+.tl-key::before { content: ""; width: 14px; height: 8px; border-radius: 99px; background: var(--c); }
 @media (max-width: 520px) { .tl-row { grid-template-columns: 100px 1fr; } }
 
 /* Navigation graph (SVG) */

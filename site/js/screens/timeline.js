@@ -4,7 +4,7 @@
 
 import { DAY, esc, fmtDate, fmtShortDate, ts } from '../core/utils.js';
 import { NOW } from '../core/store.js';
-import { statusInfo, statusPeriods, unitIssues, unitStatus } from './units.js';
+import { STATUSES, statusInfo, statusPeriods, unitIssues, unitStatus } from './units.js';
 
 /** Week ticks for the time axis: one label every `step` weeks so labels never overlap. */
 function ticks(from, to) {
@@ -46,10 +46,11 @@ export function timelineHtml(units) {
       <a class="tl-name" href="#screens/${encodeURIComponent(u.key)}" title="${esc(statusInfo(unitStatus(u).status).label)}">${esc(u.key)}</a>
       <div class="tl-track">${bars}${dot(issue, 'issue', 'First issue')}${dot(created, 'created', 'First file created')}</div></div>`;
   }).join('');
+  const legend = STATUSES.map((s) => `<span class="tl-key" style="--c:var(${s.css})">${s.label}</span>`).join('');
   return `<div class="card timeline">
     <div class="tl-row tl-axis"><span class="tl-name"></span>
       <div class="tl-track">${axis}<em class="tl-today" style="left:${x(NOW)}">today</em></div></div>
     ${body}
-    <p class="muted small tl-legend">◦ first issue · ● first file created · hover a segment for its dates</p>
+    <p class="muted small tl-legend">${legend} · ◦ first issue · ● first file created · hover a segment for its dates</p>
   </div>`;
 }
