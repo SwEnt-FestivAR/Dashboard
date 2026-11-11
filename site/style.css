@@ -108,7 +108,7 @@ a.pill:hover { text-decoration: none; filter: brightness(1.1); }
 .feature-head { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; flex-wrap: wrap; }
 .feature-head h2 { font-size: 19px; text-transform: capitalize; }
 .feature-head .mini { width: 160px; height: 8px; display: flex; border-radius: 99px; overflow: hidden; background: var(--surface2); }
-.units { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 14px; }
+.units { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 14px; align-items: start; }
 .unit { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; border-left: 4px solid var(--sc); }
 .unit-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
 .unit-head h4 { font-size: 15px; margin-right: auto; }
