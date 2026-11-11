@@ -32,7 +32,8 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
 │   │   ├── env.mjs              configuration (env vars) + git helper on the clone
 │   │   ├── people.mjs           identities: git name/email -> GitHub login (resolve)
 │   │   ├── github.mjs           REST (paginated, cached) + GraphQL reviews, open PR details
-│   │   ├── repo.mjs             commits, hotspots, navigation graph (from git and files)
+│   │   ├── repo.mjs             commits, hotspots (from git and files)
+│   │   ├── navigation.mjs       navigation graph (from the NavGraph and Navigator files)
 │   │   └── screens.mjs          screen units from main, open PRs and all branches, with tests
 │   ├── snapshot.mjs             appends today's counts to history.json (data branch); reuses site/js/screens/units.js
 │   └── serve.mjs                local static server (http://localhost:8080)
@@ -137,7 +138,7 @@ export default {
 
   These rules were chosen by the team; tests are shown on the cards but don't affect the status. The timeline replays them at every date (`statusPeriods` in `screens/units.js`) from file dates on main and issue open/close dates, so a rule must stay computable from those dates.
 - **Hotspots** (`hotspots()` in `scripts/lib/repo.mjs`): score out of 100 = 50% usages + 30% heat + 20% lines, where each criterion is a mid-rank percentile among production files (`app/src/main`). Usages = other production files mentioning the file's class name; heat = recency-weighted activity (each change halved every 14 days, weighted by log of lines changed). The priority order (usages > activity > size) was chosen by the team: change `WEIGHTS` there if it changes, and update the explanation text in `tabs/code.js` and the README.
-- **Navigation graph**: `navigationGraph()` in `scripts/lib/repo.mjs` reads the `AppScreens` enum (nodes) and the `navigate()` / `popBackStack()` calls of `class XNavigator` files (edges). If FestivAR changes this convention, update that function. On the site, columns and rows are ordered by distance from the start screen.
+- **Navigation graph**: `navigationGraph()` in `scripts/lib/navigation.mjs` reads the `AppScreens` enum (nodes) and the `navigate()` / `popBackStack()` calls of `class XNavigator` files (edges). If FestivAR changes this convention, update that function. On the site, columns and rows are ordered by distance from the start screen.
 - **Solved issues** (`isCompleted` in `core/store.js`): closed as completed. Issues closed as "not planned" never count as solved (Contributors, This week, Profile).
 - **User stories vs tasks** (`isUserStory` in `week/issues.js`): an issue is a user story if it has the "user story" label or a title starting with `US-<number>`; every other issue is a task.
 - **Issues of a screen** (`unitIssues`) = open issues whose normalized title contains the screen key, plus the numbers listed in `status.json → screens[id].issues`.

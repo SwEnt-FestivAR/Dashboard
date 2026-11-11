@@ -2,7 +2,7 @@
 // Read-only: it only reads a local clone of FestivAR (git) and the GitHub API.
 // This file documents the output and orchestrates; the work is done by the modules of scripts/lib/:
 //   env.mjs (configuration, git helper) · people.mjs (identities) · github.mjs (REST + GraphQL)
-//   repo.mjs (commits, hotspots, navigation graph) · screens.mjs (screen units)
+//   repo.mjs (commits, hotspots) · navigation.mjs (navigation graph) · screens.mjs (screen units)
 //
 // Env:
 //   FESTIVAR_DIR  path to a full clone of FestivAR, with all its branches (default: ./festivar)
@@ -36,7 +36,7 @@
 //                    only in a PR: { path, inPR: n, author, created: unix, lines, contributors }
 //                    only in a branch (no open PR): { path, inBranch: name, author, created: unix, lines, contributors }
 //   navigation       { screens: [route names, AppScreens enum order], edges: [{ from, to, kind: "go"|"back" }] }
-//                    (see navigationGraph() in lib/repo.mjs for how it is read)
+//                    (see navigationGraph() in lib/navigation.mjs for how it is read)
 //   hotspots         top 40 Kotlin files of app/src by score, most first (see hotspots() in lib/repo.mjs):
 //                    [{ f: path, n: commits touching it (merges excluded), heat: recent activity, uses: other production files
 //                       using it, lines, last: unix of its last change, score: 0–100, authors: [{login, n}] (most first) }]
@@ -50,7 +50,8 @@ import path from 'node:path';
 import { OUT, REPO, SITE_REPO, SRC, TOKEN, git } from './lib/env.mjs';
 import { fromApiUser, learnFromApiCommits, people } from './lib/people.mjs';
 import { api, apiCalls, openPRDetails, prReviews } from './lib/github.mjs';
-import { hotspots, navigationGraph, readCommits } from './lib/repo.mjs';
+import { navigationGraph } from './lib/navigation.mjs';
+import { hotspots, readCommits } from './lib/repo.mjs';
 import { buildUnits } from './lib/screens.mjs';
 
 async function main() {
