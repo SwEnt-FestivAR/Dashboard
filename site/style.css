@@ -178,11 +178,13 @@ a.pill:hover { text-decoration: none; filter: brightness(1.1); }
 .tl-name { font-size: 12.5px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tl-track { position: relative; height: 26px; border-left: 1px solid var(--border); }
 .tl-track i, .tl-track b, .tl-track span, .tl-today { position: absolute; }
-.tl-plan, .tl-bar { top: 9px; height: 8px; border-radius: 99px; }
-.tl-plan { background: var(--s-planned); opacity: .45; }
+.tl-bar { top: 9px; height: 8px; }
+.tl-track i:first-of-type { border-radius: 99px 0 0 99px; }
+.tl-track i:last-of-type { border-radius: 0 99px 99px 0; }
+.tl-track i:only-of-type { border-radius: 99px; }
+.tl-bar.planned { opacity: .45; }
 .tl-dot { top: 7px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--surface); border: 2px solid var(--muted); }
 .tl-dot.created { background: var(--text); border-color: var(--text); }
-.tl-dot.done { border-radius: 2px; transform: rotate(45deg); background: var(--s-finalized); border-color: var(--s-finalized); }
 .tl-axis .tl-track { border-left: 0; }
 .tl-axis .tl-track span { font-size: 11px; color: var(--muted); transform: translateX(-50%); white-space: nowrap; }
 .tl-today { top: 0; bottom: -2000px; border-left: 1px dashed var(--accent); font-size: 11px; font-style: normal; color: var(--accent); padding-left: 4px; pointer-events: none; }

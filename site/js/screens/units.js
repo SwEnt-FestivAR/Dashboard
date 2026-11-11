@@ -1,8 +1,8 @@
 // Screen "units" (a Screen + ViewModel pair, see the schema in scripts/fetch-data.mjs): statuses,
 // linked issues and planned screens. Pure logic, no HTML except the status bar.
 
-import { norm, plural } from '../core/utils.js';
-import { D, STATUS, assigneesOf } from '../core/store.js';
+import { norm, plural, ts } from '../core/utils.js';
+import { D, NOW, STATUS, assigneesOf } from '../core/store.js';
 
 /**
  * Screen statuses, in progress order. `css` names the color variable in style.css (:root).
@@ -49,6 +49,40 @@ export function unitStatus(u) {
   const manual = STATUS.screens[unitId(u)];
   const isManual = Boolean(statusInfo(manual?.status));
   return { status: isManual ? manual.status : autoStatus(u), manual: isManual, note: manual?.note };
+}
+
+/**
+ * The status of a unit over time, by applying the rules of autoStatus() at every date (all derived from the
+ * data, no history needed): [{ status, from, to }] in unix seconds, oldest first, the last one ending at NOW.
+ *  - before any file exists: planned while an issue about it is open (nothing before its first issue)
+ *  - in-dev while the Screen or ViewModel is not on main yet (its `created` date), or an issue about it is open
+ *  - developed otherwise
+ * A manual status of status.json applies from its `since` date, or else to the last period only.
+ */
+export function statusPeriods(u) {
+  const issues = unitIssues(u, true).map((i) => [ts(i.c), i.cl ? ts(i.cl) : Infinity]);
+  const files = [u.screen, u.viewModel];
+  const firstFile = Math.min(...files.filter(Boolean).map((f) => f.created));
+  const merged = Math.max(...files.map((f) => (onMain(f) ? f.created : Infinity)));
+  const { status: manual, since } = STATUS.screens[unitId(u)] || {};
+  const manualFrom = statusInfo(manual) ? ts(since) ?? NOW : Infinity;
+  const issueOpen = (t) => issues.some(([c, cl]) => c <= t && t < cl);
+  const statusAt = (t) => {
+    if (t >= manualFrom) return manual;
+    if (t < firstFile) return issueOpen(t) ? 'planned' : null;
+    return t < merged || issueOpen(t) ? 'in-dev' : 'developed';
+  };
+  const dates = [...issues.flat(), firstFile, merged, manualFrom].filter((t) => t <= NOW);
+  const cuts = [...new Set(dates)].sort((a, b) => a - b);
+  const periods = [];
+  cuts.forEach((from, i) => {
+    const to = cuts[i + 1] ?? NOW, status = statusAt(to > from ? (from + to) / 2 : from);
+    const last = periods.at(-1);
+    if (last?.status === status) last.to = to;
+    else if (status) periods.push({ status, from, to });
+  });
+  if (statusInfo(manual) && !since && periods.length) periods.at(-1).status = manual;
+  return periods;
 }
 
 /**

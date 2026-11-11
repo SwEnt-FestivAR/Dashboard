@@ -50,7 +50,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
         ├── screens/             domain code of the Screens tab
         │   ├── units.js         statuses, linked issues, planned screens (pure logic)
         │   ├── card.js          HTML of one screen card
-        │   ├── timeline.js      Gantt view of the screens (Cards / Timeline toggle)
+        │   ├── timeline.js      Gantt view of the status periods of each screen (Cards / Timeline toggle)
         │   └── status-dialog.js dialog that builds a status.json entry
         ├── week/
         │   └── issues.js        This week: issues per person, unassigned user stories / tasks (+ their Markdown)
@@ -133,9 +133,9 @@ export default {
   - planned = only named in an open issue
   - in-dev = Screen or ViewModel missing on main, OR an open issue about it (`unitIssues`) (`inDevReasons` lists which; the card shows them on hover)
   - developed = Screen and ViewModel on main, no open issue. Branches and open PRs touching files already on main do NOT make a screen in-dev (they are only shown on the card)
-  - finalized = manual only, set in `status.json` (with `since`, the date shown on the timeline)
+  - finalized = manual only, set in `status.json` (with `since`, the date it starts on the timeline)
 
-  These rules were chosen by the team; tests are shown on the cards but don't affect the status.
+  These rules were chosen by the team; tests are shown on the cards but don't affect the status. The timeline replays them at every date (`statusPeriods` in `screens/units.js`) from file dates on main and issue open/close dates, so a rule must stay computable from those dates.
 - **Hotspots** (`hotspots()` in `scripts/lib/repo.mjs`): score out of 100 = 50% usages + 30% heat + 20% lines, where each criterion is a mid-rank percentile among production files (`app/src/main`). Usages = other production files mentioning the file's class name; heat = recency-weighted activity (each change halved every 14 days, weighted by log of lines changed). The priority order (usages > activity > size) was chosen by the team: change `WEIGHTS` there if it changes, and update the explanation text in `tabs/code.js` and the README.
 - **Navigation graph**: `navigationGraph()` in `scripts/lib/repo.mjs` reads the `AppScreens` enum (nodes) and the `navigate()` / `popBackStack()` calls of `class XNavigator` files (edges). If FestivAR changes this convention, update that function. On the site, columns and rows are ordered by distance from the start screen.
 - **Solved issues** (`isCompleted` in `core/store.js`): closed as completed. Issues closed as "not planned" never count as solved (Contributors, This week, Profile).

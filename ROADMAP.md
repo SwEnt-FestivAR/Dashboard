@@ -15,7 +15,7 @@ Features validated by the team, with the design choices already made. Implement 
 - [x] **Reviews tab, who-reviews-whom matrix:** a heatmap of reviewer × PR author. It highlights pairs and people who never get reviewed.
 - [x] **Reviews tab, PR cycle time:** open → merge time (weekly median, and per person), PR size buckets (S < 100, M < 400, L < 1000, XL lines changed), and a warning on XL PRs.
 - [x] **Profile page** (`#person/<login>`, opened from the "Profile →" link on contributor cards and from search): a GitHub-style activity calendar, plus their PRs, issues and screens. Still to do: add their reviews once review data exists, and make avatars elsewhere link to profiles.
-- [x] **Screens timeline:** a Gantt chart per screen showing first issue → file created → merged → finalized, as a toggle in the Screens tab.
+- [x] **Screens timeline:** a Gantt chart per screen showing its status periods (planned → in development → developed → finalized), as a toggle in the Screens tab.
 - [x] **Code tab, navigation graph:** **hand-made SVG**, no library. Screens are laid out in columns by feature, arrows come from FestivAR's navigation code (routes in `navigation/`), the color shows the status, and clicking opens the screen card. The edges are extracted in `scripts/lib/repo.mjs`.
 - [x] **Code tab, hotspots:** files ranked by a 0–100 score: 50% usages by other files, 30% recency-weighted activity, 20% lines (percentiles), with their main owner and bus factor.
 - [x] **Global search (Ctrl+K):** a command palette over screens, PRs, issues and people, available on every tab.
