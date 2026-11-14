@@ -1,0 +1,45 @@
+# Rebuilds the dashboard every hour, except between 01:30 and 07:30 Swiss time.
+# GitHub delays or drops `schedule` runs (often down to one a day), so the hourly rhythm does not rely on cron:
+# each run waits an hour, starts deploy.yml, then starts itself again. GITHUB_TOKEN may trigger workflow_dispatch
+# (unlike most events), so no secret is needed. The sleeping job costs Actions minutes, which are free on a public repo.
+# Exactly one chain is alive at a time: a new run cancels the one waiting (cancel-in-progress), so the pushes and the
+# crons below only restart the hour, and revive the chain if it ever stops (failed dispatch, GitHub outage).
+name: Hourly refresh
+
+on:
+  push:
+    branches: [main] # deploy.yml builds right away; the next build is an hour later
+  schedule:
+    - cron: '17 6,12,18 * * *' # restarter only, any of them may be dropped
+  workflow_dispatch:
+
+permissions:
+  actions: write # start deploy.yml and this workflow
+
+concurrency:
+  group: refresh
+  cancel-in-progress: true
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Wait an hour
+        run: sleep 3600
+
+      - name: Rebuild, unless it is night in Switzerland (summer time included)
+        run: |
+          now=$((10#$(TZ=Europe/Zurich date +%H%M)))  # e.g. 0745 -> 745
+          if [ "$now" -ge 130 ] && [ "$now" -lt 730 ]; then
+            echo "Quiet hours, no build"
+          else
+            gh workflow run deploy.yml --ref main
+          fi
+
+      - name: Start the next hour
+        if: success() || failure() # keep the chain alive after a failed dispatch, but not when a newer run cancelled this one
+        run: gh workflow run refresh.yml --ref main

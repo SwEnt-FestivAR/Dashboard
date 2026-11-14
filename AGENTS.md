@@ -26,6 +26,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
 ├── status.json                  manual screen statuses — edited by the team, by hand
 ├── aliases.json                 git email/name -> GitHub login, for unlinked commits
 ├── .github/workflows/deploy.yml clone FestivAR -> fetch data -> deploy site/ to Pages
+├── .github/workflows/refresh.yml hourly loop: waits 1 h, starts deploy.yml, restarts itself (GitHub drops most crons)
 ├── scripts/
 │   ├── fetch-data.mjs           builds site/data.json: documents its schema at the top, then orchestrates lib/
 │   ├── lib/
