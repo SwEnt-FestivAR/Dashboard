@@ -126,5 +126,19 @@
    "developed": 12,
    "finalized": 0
   }
+ },
+ {
+  "d": "2026-11-16",
+  "prsOpen": 4,
+  "prsDraft": 1,
+  "issuesOpen": 53,
+  "issuesUnassigned": 22,
+  "issuesClosed": 228,
+  "screens": {
+   "planned": 3,
+   "in-dev": 5,
+   "developed": 12,
+   "finalized": 0
+  }
  }
 ]
