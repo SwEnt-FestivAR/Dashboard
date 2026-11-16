@@ -205,6 +205,9 @@ a.pill:hover { text-decoration: none; filter: brightness(1.1); }
 .ng-edge { fill: none; stroke: var(--muted); stroke-width: 1.5; opacity: .7; transition: opacity .15s; }
 .ng-edge.back { stroke-dasharray: 5 4; }
 #ng-arrow path { fill: var(--muted); }
+.ng-edge.bar { stroke: var(--accent); stroke-dasharray: 2 4; opacity: .45; }
+.ng-node .ng-bar { fill: var(--accent); stroke: none; }
+.ng-tab { fill: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: .05em; text-anchor: middle; }
 .nav-graph.focus .ng-edge { opacity: .08; }
 .nav-graph.focus .ng-edge.on { opacity: 1; stroke: var(--accent); stroke-width: 2.2; }
 

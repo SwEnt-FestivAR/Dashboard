@@ -13,9 +13,11 @@ const isTest = (f) => /\/(test|androidTest)\//.test(f);
 const html = `
   <div class="card">
     <div class="card-head"><h3>Navigation graph</h3>
+      <label class="check"><input type="checkbox" id="navBar" checked> Show bottom bar links</label>
       <label class="check"><input type="checkbox" id="navAll"> Show back &amp; sign-out links</label>
     </div>
     <p class="muted small">Read from the NavGraph files and <code>*Navigator</code> classes of FestivAR. Border = screen status.
+      A bar under a screen means it shows the bottom bar; its tabs open the screens tagged with a tab name (dotted links).
       Hover a screen to highlight its links, click it to open its card.</p>
     <div class="nav-graph-box" id="navGraph"></div>
   </div>
@@ -31,7 +33,7 @@ const html = `
   </div>`;
 
 function setup() {
-  for (const sel of ['#hotspotTests', '#navAll']) $(sel).addEventListener('input', () => render());
+  for (const sel of ['#hotspotTests', '#navAll', '#navBar']) $(sel).addEventListener('input', () => render());
 }
 
 function render() {
@@ -43,7 +45,7 @@ function render() {
 /** Draws the graph and highlights the links of the hovered screen (others fade out). */
 function renderNavGraph() {
   const box = $('#navGraph');
-  box.innerHTML = navGraphSvg($('#navAll').checked);
+  box.innerHTML = navGraphSvg($('#navAll').checked, $('#navBar').checked);
   const svg = $('svg', box);
   for (const node of $$('.ng-node', box)) {
     const s = node.dataset.screen;

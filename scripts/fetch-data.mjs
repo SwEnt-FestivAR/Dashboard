@@ -35,7 +35,8 @@
 //   FileInfo         on main:     { path, lines, todos, author, created: unix, lastModified: unix, lastAuthor, commits, contributors: [{login, n}] }
 //                    only in a PR: { path, inPR: n, author, created: unix, lines, contributors }
 //                    only in a branch (no open PR): { path, inBranch: name, author, created: unix, lines, contributors }
-//   navigation       { screens: [route names, AppScreens enum order], edges: [{ from, to, kind: "go"|"back" }] }
+//   navigation       { screens: [route names, AppScreens enum order], edges: [{ from, to, kind: "go"|"back" }],
+//                      bar: { tabs: [[bottom bar tab, route it opens]], on: [routes that show the bottom bar]} }
 //                    (see navigationGraph() in lib/navigation.mjs for how it is read)
 //   hotspots         top 40 Kotlin files of app/src by score, most first (see hotspots() in lib/repo.mjs):
 //                    [{ f: path, n: commits touching it (merges excluded), heat: recent activity, uses: other production files

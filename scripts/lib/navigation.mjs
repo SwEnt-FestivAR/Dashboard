@@ -47,7 +47,20 @@ function helperFunctions(decls) {
 }
 
 /**
- * Navigation graph: { screens: [AppScreens entries], edges: [{ from, to, kind }] }.
+ * The bottom bar: { tabs: [[tab, route]], on: [routes] }. `tabs` comes from the `NavigationTab.X -> AppScreens.Y`
+ * branches (the start screen each tab opens, in BottomBarNavigator), `on` from the `AppScreens.X -> BottomBarState`
+ * branches (the screens that show the bar, in bottomBarStateFor). Both are empty if FestivAR has no such code.
+ */
+function bottomBar(texts) {
+  const all = (re) => texts.flatMap((t) => [...t.matchAll(re)]);
+  return {
+    tabs: all(/NavigationTab\.(\w+)\s*->\s*AppScreens\.(\w+)/g).map(([, tab, route]) => [tab, route]),
+    on: [...new Set(all(/AppScreens\.(\w+)\s*->\s*BottomBarState\b/g).map(([, route]) => route))],
+  };
+}
+
+/**
+ * Navigation graph: { screens: [AppScreens entries], edges: [{ from, to, kind }], bar: bottomBar() }.
  * FestivAR's conventions:
  *  - routes = entries of `enum class AppScreens { … }`
  *  - each `composable(route = AppScreens.X…) { … }` of a NavGraph file is screen X. Its links are the
@@ -79,5 +92,5 @@ export function navigationGraph(allFiles) {
       for (const { to, kind } of links) if (to !== from) edges.set(`${from}>${to}>${kind}`, { from, to, kind });
     }
   }
-  return { screens, edges: [...edges.values()] };
+  return { screens, edges: [...edges.values()], bar: bottomBar(texts) };
 }
