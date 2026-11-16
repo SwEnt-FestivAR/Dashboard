@@ -60,6 +60,9 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
         ├── reviews/
         │   └── stats.js         review / cycle time / PR size statistics, peer approvals, reviewers of a PR (pure logic)
         ├── code/
+        │   ├── files.js         Kotlin files of data.files: shown files, folder tree, "uses" links, area colors (pure logic)
+        │   ├── file-radial.js   SVG radial tree of those files, with "uses" curves (hand-made layout)
+        │   ├── file-tree.js     the same files as a collapsible list + panel of what a file uses and what uses it
         │   └── nav-graph.js     SVG of the navigation graph (hand-made layout)
         └── tabs/                one module per tab
             ├── index.js         THE TAB REGISTRY (order = nav order)
@@ -69,7 +72,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
             ├── prs.js
             ├── reviews.js       review stats, who-reviews-whom matrix, cycle time, PR sizes
             ├── milestones.js
-            ├── code.js          navigation graph + hotspots (data.navigation, data.hotspots)
+            ├── code.js          file graph and list + navigation graph + hotspots (data.files, data.navigation, data.hotspots)
             ├── trends.js        curves from history.json (loaded on first display)
             └── person.js        profile page, hidden from the nav, route #person/<login>
 ```
@@ -141,6 +144,7 @@ export default {
   These rules were chosen by the team; tests are shown on the cards but don't affect the status. They are written once, in `autoStatus(u, t)` and `inDevReasons(u, t)` of `screens/units.js`, which take a date (`NOW` by default): the cards use today, and the timeline (`statusPeriods`) replays them in the past from file `created` dates and issue open/close dates. So a rule must stay computable from those dates; change it there only.
 - **Hotspots** (`hotspots()` in `scripts/lib/repo.mjs`): score out of 100 = 50% usages + 30% heat + 20% lines, where each criterion is a mid-rank percentile among production files (`app/src/main`). Usages = other production files mentioning the file's class name; heat = recency-weighted activity (each change halved every 14 days, weighted by log of lines changed). The priority order (usages > activity > size) was chosen by the team: change `WEIGHTS` there if it changes, and update the explanation text in `tabs/code.js` and the README.
 - **Navigation graph**: `navigationGraph()` in `scripts/lib/navigation.mjs` reads the `AppScreens` enum (nodes), then each `composable(route = AppScreens.X…)` block of the NavGraph files: the `navigator.onY` actions it wires (looked up in the `class …Navigator` files, which can be shared by several screens) and its own `navigate()` / `popBackStack()` calls (in the block or in a helper function of the file it calls, like `RedirectToLogin`) give the edges of X. If FestivAR changes this convention, update that function. On the site, columns and rows are ordered by distance from the start screen. The bottom bar (`bottomBar()`) comes from the `NavigationTab.X -> AppScreens.Y` branches (where each tab goes) and the `AppScreens.X -> BottomBarState` branches (which screens show the bar).
+- **Files** (`fileGraph()` in `scripts/lib/files.mjs`): every Kotlin file of `app/src`, linked to the files whose class (file name) it mentions, the same signal as the hotspot usages. The site shows them twice, from the same folder tree (`folderTree()` in `code/files.js`, single-folder chains merged) and area colors (`--cat-<n>` tokens): a radial graph (`code/file-radial.js`) and a collapsible list (`code/file-tree.js`). Selecting a file in either marks what it uses and what uses it in both, and lists them in a panel.
 - **Solved issues** (`isCompleted` in `core/store.js`): closed as completed. Issues closed as "not planned" never count as solved (Contributors, This week, Profile).
 - **User stories vs tasks** (`isUserStory` in `week/issues.js`): an issue is a user story if it has the "user story" label or a title starting with `US-<number>`; every other issue is a task.
 - **Issues of a screen** (`unitIssues`) = open issues whose normalized title contains the screen key, plus the numbers listed in `status.json → screens[id].issues`.
