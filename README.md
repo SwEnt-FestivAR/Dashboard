@@ -44,7 +44,7 @@ Hover the status badge of a card to see why a screen is still in development (e.
 1. Push this repo to GitHub.
 2. Go to **Settings → Pages → Build and deployment → Source** and choose **GitHub Actions**.
 3. The workflow needs to push the daily snapshot to the `data` branch. It asks for `contents: write`; if the organization restricts that, allow it in **Settings → Actions → General → Workflow permissions** ("Read and write permissions").
-4. The workflow `.github/workflows/deploy.yml` runs on every push to `main`, every hour except between 01:30 and 07:30 Swiss time (summer time included), and on demand (**Actions → Build & deploy dashboard → Run workflow**). The hourly runs are started by `.github/workflows/refresh.yml`, not by a cron: GitHub drops most scheduled runs. That workflow waits an hour, starts a build, then starts itself again. It is (re)started by every push, by a few daily crons, or by hand (**Actions → Hourly refresh → Run workflow**).
+4. The workflow `.github/workflows/deploy.yml` runs on every push to `main`, every 2 hours, and on demand (**Actions → Build & deploy dashboard → Run workflow**). There are no automatic builds at night (01:30–07:30) or from Thursday 00:00 to Friday 11:00, Swiss time (summer time included). The automatic runs are started by `.github/workflows/refresh.yml`, not by a cron: GitHub drops most scheduled runs. That workflow waits 2 hours, starts a build, then starts itself again. It stops completely during the Thursday pause, so it does not hold a runner that FestivAR's CI could use. It is (re)started by every push, by a few crons (including several on Friday after 11:00), or by hand (**Actions → Refresh every 2 hours → Run workflow**).
 
 ## Local preview
 

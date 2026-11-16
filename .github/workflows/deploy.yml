@@ -6,7 +6,7 @@ name: Build & deploy dashboard
 on:
   push:
     branches: [main]
-  workflow_dispatch: # by hand, and every hour by refresh.yml (same-day runs replace today's snapshot)
+  workflow_dispatch: # by hand, and every 2 hours by refresh.yml (same-day runs replace today's snapshot)
 
 permissions:
   contents: write # push the daily snapshot to the `data` branch
