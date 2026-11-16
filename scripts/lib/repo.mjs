@@ -59,16 +59,13 @@ export function readCommits(branch) {
 const WEIGHTS = { uses: 0.5, heat: 0.3, lines: 0.2 };
 
 /**
- * Usages of each Kotlin file: how many OTHER production files (app/src/main) mention its class name, i.e.
- * the file name without ".kt" as a whole word (Kotlin names a file after its main class and needs no import
- * within a package, so a name search is the reliable signal). Returns (file) => count.
+ * Usages of each file of the file graph: how many OTHER production files (app/src/main) mention its class
+ * (see fileGraph() in files.mjs). Returns (index) => count.
  */
-function usageCounter(allFiles) {
-  const sources = allFiles.filter((f) => f.startsWith('app/src/main/') && f.endsWith('.kt')).map((f) => [f, readFile(f)]);
-  return (file) => {
-    const name = new RegExp(`\\b${path.basename(file, '.kt')}\\b`);
-    return sources.filter(([f, text]) => f !== file && name.test(text)).length;
-  };
+function usageCounter(p, e) {
+  const users = p.map(() => new Set());
+  for (const [a, b] of e) if (p[a].startsWith('app/src/main/')) users[b].add(a);
+  return (i) => users[i].size;
 }
 
 /**
@@ -83,17 +80,15 @@ function percentile(values) {
 }
 
 /**
- * Current Kotlin files of app/src ranked by a score out of 100: each criterion becomes a percentile
+ * Kotlin files of app/src (the file graph of files.mjs) ranked by a score out of 100: each criterion becomes a percentile
  * (robust to extreme values), then score = 50% usages + 30% recent activity (heat) + 20% lines.
  * Percentiles are measured among production files (app/src/main): test files are never used elsewhere and
  * would skew them; tests are still scored, against that same scale. Renamed files count only under their
  * current name.
  */
-export function hotspots(allFiles, fileChanges) {
-  const usesOf = usageCounter(allFiles);
-  const files = allFiles
-    .filter((f) => f.startsWith('app/src/') && f.endsWith('.kt') && fileChanges[f])
-    .map((f) => ({ f, fc: fileChanges[f], lines: countLines(readFile(f)), uses: usesOf(f) }));
+export function hotspots({ p, l, e }, fileChanges) {
+  const usesOf = usageCounter(p, e);
+  const files = p.flatMap((f, i) => (fileChanges[f] ? [{ f, fc: fileChanges[f], lines: l[i], uses: usesOf(i) }] : []));
   const production = files.filter((x) => x.f.startsWith('app/src/main/'));
   const pct = {
     uses: percentile(production.map((x) => x.uses)),

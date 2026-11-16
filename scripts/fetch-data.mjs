@@ -84,6 +84,7 @@ async function main() {
   }));
   const openPRs = await openPRDetails(pulls);
   const allFiles = git('ls-files').split('\n').filter(Boolean);
+  const files = fileGraph(allFiles);
 
   const data = {
     repo: REPO, siteRepo: SITE_REPO, branch, generatedAt: new Date().toISOString(), hasToken: Boolean(TOKEN),
@@ -91,8 +92,8 @@ async function main() {
     milestones: milestones.map((m) => ({ title: m.title, state: m.state, due: m.due_on })),
     units: buildUnits(allFiles, openPRs, branch),
     navigation: navigationGraph(allFiles),
-    hotspots: hotspots(allFiles, fileChanges),
-    files: fileGraph(allFiles),
+    hotspots: hotspots(files, fileChanges),
+    files,
   };
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(data));
