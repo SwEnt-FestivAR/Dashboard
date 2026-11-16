@@ -34,6 +34,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
 │   │   ├── people.mjs           identities: git name/email -> GitHub login (resolve)
 │   │   ├── github.mjs           REST (paginated, cached) + GraphQL reviews, open PR details
 │   │   ├── repo.mjs             commits, hotspots (from git and files)
+│   │   ├── files.mjs            file graph: every Kotlin file and which files it uses
 │   │   ├── navigation.mjs       navigation graph and bottom bar (from the NavGraph, Navigator and BottomBar files)
 │   │   └── screens.mjs          screen units from main, open PRs and all branches, with tests
 │   ├── snapshot.mjs             writes today's counts to history.json (data branch, last build of the day wins); reuses site/js/screens/units.js

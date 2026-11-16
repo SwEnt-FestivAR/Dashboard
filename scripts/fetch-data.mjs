@@ -2,7 +2,7 @@
 // Read-only: it only reads a local clone of FestivAR (git) and the GitHub API.
 // This file documents the output and orchestrates; the work is done by the modules of scripts/lib/:
 //   env.mjs (configuration, git helper) · people.mjs (identities) · github.mjs (REST + GraphQL)
-//   repo.mjs (commits, hotspots) · navigation.mjs (navigation graph) · screens.mjs (screen units)
+//   repo.mjs (commits, hotspots) · files.mjs (file graph) · navigation.mjs (navigation graph) · screens.mjs (screen units)
 //
 // Env:
 //   FESTIVAR_DIR  path to a full clone of FestivAR, with all its branches (default: ./festivar)
@@ -42,6 +42,9 @@
 //                    [{ f: path, n: commits touching it (merges excluded), heat: recent activity, uses: other production files
 //                       using it, lines, last: unix of its last change, score: 0–100, authors: [{login, n}] (most first) }]
 //
+//   files            every Kotlin file of app/src: { p: [paths], l: [lines], e: [[i, j]] }, where i, j are indexes in p and
+//                    the edge means "file i mentions the class of file j" (see fileGraph() in lib/files.mjs)
+//
 // How screens are found (lib/screens.mjs): any file matching UI_RE, i.e. app/src/main/java/**/ui/<feature>/**/<Key>(Screen|ViewModel).kt.
 // <feature> is the first folder after ui/, <Key> is the shared prefix that pairs a Screen with its ViewModel
 // (CreateTaskScreen.kt + CreateTaskViewModel.kt -> unit "task/CreateTask").
@@ -51,6 +54,7 @@ import path from 'node:path';
 import { OUT, REPO, SITE_REPO, SRC, TOKEN, git } from './lib/env.mjs';
 import { fromApiUser, learnFromApiCommits, people } from './lib/people.mjs';
 import { api, apiCalls, openPRDetails, prReviews } from './lib/github.mjs';
+import { fileGraph } from './lib/files.mjs';
 import { navigationGraph } from './lib/navigation.mjs';
 import { hotspots, readCommits } from './lib/repo.mjs';
 import { buildUnits } from './lib/screens.mjs';
@@ -88,6 +92,7 @@ async function main() {
     units: buildUnits(allFiles, openPRs, branch),
     navigation: navigationGraph(allFiles),
     hotspots: hotspots(allFiles, fileChanges),
+    files: fileGraph(allFiles),
   };
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(data));
