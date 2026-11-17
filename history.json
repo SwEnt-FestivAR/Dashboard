@@ -145,13 +145,13 @@
   "d": "2026-11-17",
   "prsOpen": 10,
   "prsDraft": 3,
-  "issuesOpen": 44,
+  "issuesOpen": 45,
   "issuesUnassigned": 14,
   "issuesClosed": 232,
   "screens": {
    "planned": 2,
-   "in-dev": 6,
-   "developed": 12,
+   "in-dev": 7,
+   "developed": 11,
    "finalized": 0
   }
  }
