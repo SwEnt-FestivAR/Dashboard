@@ -8,7 +8,7 @@ const state = {
   days: 0,              // period filter, 0 = all time
   hideBots: true,
   metric: 'commits',    // bar chart metric: commits | merged | open | issues
-  timeMetric: 'commits', // weekly chart: commits | merged
+  timeMetric: 'commits', // weekly chart: commits | merged | lines
   focus: new Set(),     // logins clicked on the cards (empty = everyone)
 };
 
@@ -38,6 +38,7 @@ const html = `
     <div class="card-head"><h3>Activity over time</h3>
       <div class="seg small" id="timeMetric">
         <button data-m="commits" class="on">Commits / week</button><button data-m="merged">PRs merged / week</button>
+        <button data-m="lines">Lines changed / week</button>
       </div>
     </div>
     <div class="chart-box tall"><canvas id="timeChart"></canvas></div>
@@ -140,13 +141,20 @@ function renderLinesChart(stats) {
   });
 }
 
-/** Weekly events of the chosen metric: [unix, login], one per commit (merges excluded) or merged PR. */
+/**
+ * Weekly events of the chosen metric: [unix, login, up, down]. Commits and merged PRs count 1 each; for lines,
+ * up = lines added and down = lines deleted by each commit (merge commits excluded by the fetch script).
+ */
 function weeklyEvents(from) {
-  if (state.timeMetric === 'merged') return D.prs.filter((p) => p.m && ts(p.m) >= from).map((p) => [ts(p.m), p.a]);
-  return D.commits.filter((c) => c.t >= from).map((c) => [c.t, c.a]);
+  if (state.timeMetric === 'merged') return D.prs.filter((p) => p.m && ts(p.m) >= from).map((p) => [ts(p.m), p.a, 1, 0]);
+  const lines = state.timeMetric === 'lines';
+  return D.commits.filter((c) => c.t >= from).map((c) => [c.t, c.a, lines ? c.add : 1, lines ? c.del : 0]);
 }
 
-/** Stacked bars of commits (or merged PRs) per week and per person. */
+/**
+ * Stacked bars per week and per person: commits, merged PRs, or lines changed. Lines are diverging:
+ * added above zero, deleted below zero (lighter shade of the person's color, one legend entry per person).
+ */
 function renderWeeklyChart(logins) {
   const events = weeklyEvents(since());
   if (!events.length) return clearChart('timeChart');
@@ -154,21 +162,38 @@ function renderWeeklyChart(logins) {
   const weeks = [];
   for (let w = weekStart(Math.min(...events.map(([t]) => t))); w <= weekStart(NOW); w = addWeeks(w, 1)) weeks.push(w);
   const index = new Map(weeks.map((w, i) => [w, i]));
-  const series = Object.fromEntries(logins.map((l) => [l, weeks.map(() => 0)]));
-  for (const [t, a] of events) if (series[a]) series[a][index.get(weekStart(t))]++;
+  const zeros = () => Object.fromEntries(logins.map((l) => [l, weeks.map(() => 0)]));
+  const up = zeros(), down = zeros();
+  for (const [t, a, add, del] of events) {
+    if (!up[a]) continue;
+    up[a][index.get(weekStart(t))] += add;
+    down[a][index.get(weekStart(t))] -= del;
+  }
+
+  const lines = state.timeMetric === 'lines';
+  const bar = (l, data, backgroundColor) => ({ label: P(l).name, data, backgroundColor, borderRadius: 3 });
+  const datasets = logins.map((l) => bar(l, up[l], color(l)));
+  if (lines) datasets.push(...logins.map((l) => ({ ...bar(l, down[l], `${color(l)}80`), deleted: true })));
 
   // Tooltip: busiest people first, people with 0 hidden
-  const tooltip = { itemSort: (a, b) => b.raw - a.raw, filter: (item) => item.raw > 0 };
+  const tooltip = { itemSort: (a, b) => Math.abs(b.raw) - Math.abs(a.raw), filter: (item) => item.raw !== 0 };
+  if (lines) tooltip.callbacks = { label: (c) => `${c.dataset.label}: ${c.raw > 0 ? '+' : '−'}${fmtNum(Math.abs(c.raw))}` };
   const options = chartOptions({ legend: true, stacked: true, tooltip });
   options.scales.x.title = { display: true, text: 'Week starting Friday 12:00' };
-  chart('timeChart', {
-    type: 'bar',
-    data: {
-      labels: weeks.map(fmtShortDate),
-      datasets: logins.map((l) => ({ label: P(l).name, data: series[l], backgroundColor: color(l), borderRadius: 3 })),
-    },
-    options,
-  });
+  if (lines) {
+    options.scales.y.ticks.callback = (v) => fmtNum(Math.abs(v));
+    options.plugins.legend.labels.filter = (item, data) => !data.datasets[item.datasetIndex].deleted;
+    options.plugins.legend.onClick = togglePerson;
+  }
+  chart('timeChart', { type: 'bar', data: { labels: weeks.map(fmtShortDate), datasets }, options });
+}
+
+/** Legend click in lines mode: hides or shows both the added and the deleted bars of that person. */
+function togglePerson(e, item, legend) {
+  const ch = legend.chart;
+  const show = !ch.isDatasetVisible(item.datasetIndex);
+  ch.data.datasets.forEach((d, i) => d.label === item.text && ch.setDatasetVisibility(i, show));
+  ch.update();
 }
 
 export default { id: 'contributors', label: 'Contributors', html, setup, render };
