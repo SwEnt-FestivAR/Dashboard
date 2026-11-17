@@ -143,15 +143,15 @@
  },
  {
   "d": "2026-11-17",
-  "prsOpen": 11,
-  "prsDraft": 1,
-  "issuesOpen": 44,
+  "prsOpen": 14,
+  "prsDraft": 2,
+  "issuesOpen": 55,
   "issuesUnassigned": 13,
   "issuesClosed": 234,
   "screens": {
    "planned": 2,
-   "in-dev": 7,
-   "developed": 11,
+   "in-dev": 8,
+   "developed": 10,
    "finalized": 0
   }
  }
