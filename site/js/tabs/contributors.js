@@ -140,12 +140,15 @@ function renderLinesChart(stats) {
   });
 }
 
+/** Weekly events of the chosen metric: [unix, login], one per commit (merges excluded) or merged PR. */
+function weeklyEvents(from) {
+  if (state.timeMetric === 'merged') return D.prs.filter((p) => p.m && ts(p.m) >= from).map((p) => [ts(p.m), p.a]);
+  return D.commits.filter((c) => c.t >= from).map((c) => [c.t, c.a]);
+}
+
 /** Stacked bars of commits (or merged PRs) per week and per person. */
 function renderWeeklyChart(logins) {
-  const from = since();
-  const events = state.timeMetric === 'commits'
-    ? D.commits.filter((c) => c.t >= from).map((c) => [c.t, c.a])
-    : D.prs.filter((p) => p.m && ts(p.m) >= from).map((p) => [ts(p.m), p.a]);
+  const events = weeklyEvents(since());
   if (!events.length) return clearChart('timeChart');
 
   const weeks = [];
