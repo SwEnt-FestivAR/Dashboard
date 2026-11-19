@@ -21,8 +21,8 @@ Press **Ctrl+K** (or **/**, or click **Search**) anywhere to search screens, peo
 | Status | Meaning | Source |
 |---|---|---|
 | Planned | not in the code yet, only named in an open issue ("Implement the My tasks Screen") | auto |
-| In development | the Screen or the ViewModel is not on `main` yet, **or** an open issue is about it | auto |
-| Developed | Screen and ViewModel on `main`, no open issue about it (open PRs and branches touching it are shown on the card but do not change the status) | auto |
+| In development | the Screen or the ViewModel (not needed for a Fragment) is not on `main` yet, **or** an open issue is about it | auto |
+| Developed | Screen and ViewModel (or a Fragment alone) on `main`, no open issue about it (open PRs and branches touching it are shown on the card but do not change the status) | auto |
 | Finalized | done and validated by the team | manual |
 
 Hover the status badge of a card to see why a screen is still in development (e.g. "ViewModel not on main, 2 open issues").

@@ -18,6 +18,9 @@ export const STATUSES = [
 /** The STATUSES entry of a status id (undefined for an unknown id). */
 export const statusInfo = (id) => STATUSES.find((s) => s.id === id);
 
+/** True when the screen is a Fragment (SettingsFragment.kt): it holds its own logic, so it needs no ViewModel. */
+export const isFragment = (u) => Boolean(u.screen?.path.endsWith('Fragment.kt'));
+
 /** A unit's id, e.g. "task/CreateTask". It is also its key in status.json. */
 export const unitId = (u) => `${u.feature}/${u.key}`;
 
@@ -29,16 +32,16 @@ const openAt = (issue, t) => ts(issue.c) <= t && !(issue.cl && ts(issue.cl) <= t
 const openIssuesAt = (u, t) => unitIssues(u, true).filter((i) => openAt(i, t));
 
 /**
- * Why a screen is in development at date t (empty when it is not): Screen or ViewModel not on main yet, or
- * open issues about it. Branches and open PRs touching files already on main do not count: once both files
- * are merged and no issue is open, the screen is developed, even while someone improves it (the card still
- * shows those PRs and branches).
+ * Why a screen is in development at date t (empty when it is not): Screen or ViewModel not on main yet (a
+ * Fragment needs no ViewModel), or open issues about it. Branches and open PRs touching files already on main
+ * do not count: once its files are merged and no issue is open, the screen is developed, even while someone
+ * improves it (the card still shows those PRs and branches).
  */
 export function inDevReasons(u, t = NOW) {
   const issues = openIssuesAt(u, t).length;
   return [
     !onMainAt(u.screen, t) && 'Screen not on main',
-    !onMainAt(u.viewModel, t) && 'ViewModel not on main',
+    !onMainAt(u.viewModel, t) && !isFragment(u) && 'ViewModel not on main',
     issues && plural(issues, 'open issue'),
   ].filter(Boolean);
 }
