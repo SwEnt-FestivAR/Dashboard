@@ -4,7 +4,7 @@
 import { esc, fmtDate, plural, ts } from '../core/utils.js';
 import { D, P, ago, assigneesOf, nameOf, repoUrl } from '../core/store.js';
 import { avatar, avatars, extLink, issueRow } from '../core/ui.js';
-import { inDevReasons, statusInfo, unitId, unitIssues, unitStatus } from './units.js';
+import { inDevReasons, isFragment, statusInfo, unitId, unitIssues, unitStatus } from './units.js';
 
 /** `expanded` = the open-issues list is shown. Buttons carry data-id for the click handlers of the tab. */
 export function screenCard(u, expanded) {
@@ -14,7 +14,7 @@ export function screenCard(u, expanded) {
   const why = st.status === 'in-dev' ? ` (${inDevReasons(u).join(', ')})` : '';
   const blocks = u.planned
     ? plannedBlock(u, 'screen', 'Screen') + plannedBlock(u, 'viewModel', 'ViewModel')
-    : fileBlock(u.screen, 'Screen') + fileBlock(u.viewModel, 'ViewModel');
+    : fileBlocks(u);
   return `<div class="unit" style="--sc:var(${info.css})">
     <div class="unit-head"><h4>${esc(u.key)}</h4>
       <button class="status-btn" data-id="${esc(unitId(u))}" title="${esc(info.desc)}${why} — click to change">
@@ -64,6 +64,12 @@ function notOnMain(f) {
   if (f.inPR) return [repoUrl(`/pull/${f.inPR}/files`), `only in PR #${f.inPR}`];
   if (f.inBranch) return [repoUrl(`/blob/${f.inBranch}/${f.path}`), `only in ⎇ ${esc(f.inBranch)}`];
   return null;
+}
+
+/** Screen and ViewModel blocks, or a single Fragment block when the screen is a Fragment without ViewModel. */
+function fileBlocks(u) {
+  if (isFragment(u) && !u.viewModel) return fileBlock(u.screen, 'Fragment');
+  return fileBlock(u.screen, 'Screen') + fileBlock(u.viewModel, 'ViewModel');
 }
 
 /** Half of a card for a file. `f` is a FileInfo (see the schema in fetch-data.mjs) or null. */
