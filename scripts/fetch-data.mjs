@@ -29,7 +29,7 @@
 //   openPRs          [{ n, title, a, d, c, u: updated, branch, reviewers: [login], review: "none"|"commented"|"changes"|"approved"|null,
 //                       ci: "success"|"failure"|"pending"|"none"|null, files: [{f, s, add, del}], screens: ["feature/Key"] }]
 //   milestones       [{ title, state, due }] (open / closed counts are computed by the site from `issues`)
-//   units            one entry per screen, i.e. a Screen/ViewModel pair:
+//   units            one entry per screen, i.e. a Screen/ViewModel pair (or a Fragment, in `screen`, with no ViewModel):
 //                    { feature, key, screen: FileInfo|null, viewModel: FileInfo|null, openPRs: [n], branches: [branch names touching it],
 //                      tests: { ui: [name], unit: [name] } }
 //   FileInfo         on main:     { path, lines, todos, author, created: unix, lastModified: unix, lastAuthor, commits, contributors: [{login, n}] }
@@ -45,9 +45,11 @@
 //   files            every Kotlin file of app/src: { p: [paths], l: [lines], e: [[i, j]] }, where i, j are indexes in p and
 //                    the edge means "file i mentions the class of file j" (see fileGraph() in lib/files.mjs)
 //
-// How screens are found (lib/screens.mjs): any file matching UI_RE, i.e. app/src/main/java/**/ui/<feature>/**/<Key>(Screen|ViewModel).kt.
+// How screens are found (lib/screens.mjs): any file matching UI_RE, i.e.
+// app/src/main/java/**/ui/<feature>/**/<Key>(Screen|ViewModel|Fragment).kt.
 // <feature> is the first folder after ui/, <Key> is the shared prefix that pairs a Screen with its ViewModel
 // (CreateTaskScreen.kt + CreateTaskViewModel.kt -> unit "task/CreateTask").
+// A <Key>Fragment.kt is a whole screen on its own (ui/settings/SettingsFragment.kt -> unit "settings/Settings").
 
 import fs from 'node:fs';
 import path from 'node:path';

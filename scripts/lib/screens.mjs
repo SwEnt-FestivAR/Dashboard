@@ -1,21 +1,24 @@
-// Screen units (Screen + ViewModel pairs, see the schema in scripts/fetch-data.mjs), from main, open PRs and
-// every other branch of the clone, with their tests.
+// Screen units (Screen + ViewModel pairs, or a single Fragment, see the schema in scripts/fetch-data.mjs), from main,
+// open PRs and every other branch of the clone, with their tests.
 
 import path from 'node:path';
 import { git } from './env.mjs';
 import { resolve } from './people.mjs';
 import { countLines, ranked, readFile } from './repo.mjs';
 
-// Captures: [1] feature folder, [2] screen key, [3] "Screen" | "ViewModel"
-const UI_RE = /^app\/src\/main\/java\/.*\/ui\/([^/]+)\/(?:.*\/)?([A-Za-z0-9]+?)(Screen|ViewModel)\.kt$/;
+// Captures: [1] feature folder, [2] screen key, [3] "Screen" | "ViewModel" | "Fragment"
+const UI_RE = /^app\/src\/main\/java\/.*\/ui\/([^/]+)\/(?:.*\/)?([A-Za-z0-9]+?)(Screen|ViewModel|Fragment)\.kt$/;
 // ui/ subfolders that hold shared code, not screens
 const SKIP_FEATURES = new Set(['components', 'theme']);
 
-/** { feature, key, slot: "screen"|"viewModel" } for a screen file path, or null. */
+/**
+ * { feature, key, slot: "screen"|"viewModel" } for a screen file path, or null. A Fragment (SettingsFragment.kt)
+ * fills the screen slot: it is a View-based screen that holds its own logic, with no ViewModel.
+ */
 function parse(file) {
   const m = UI_RE.exec(file);
   if (!m || SKIP_FEATURES.has(m[1])) return null;
-  return { feature: m[1], key: m[2], slot: m[3] === 'Screen' ? 'screen' : 'viewModel' };
+  return { feature: m[1], key: m[2], slot: m[3] === 'ViewModel' ? 'viewModel' : 'screen' };
 }
 
 /** History of a file on the default branch (--follow tracks renames). The oldest commit gives the initial author. */
