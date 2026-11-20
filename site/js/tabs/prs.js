@@ -1,7 +1,7 @@
 // Open PRs tab: KPIs and a kanban of open PRs. The last column holds the PRs approved during the current
 // week (Friday 12:00 → Friday 12:00), merged ones included; older approvals go back to "Needs review".
 // The review columns need review data, which only exists when the fetch had a token (D.hasToken).
-// Above the kanban, a "free to review" card lists who has no pending review request on an open PR.
+// Above the kanban, a "who can review" card lists who is not a reviewer of a PR still in review.
 
 import { $, DAY, addWeeks, countBy, esc, fmtWeekDay, plural, sumBy, ts, uniq, weekStart } from '../core/utils.js';
 import { D, NOW, P, ago, nameOf } from '../core/store.js';
@@ -13,7 +13,7 @@ const STALE_DAYS = 3;
 const html = `
   <div class="kpis" id="prKpis"></div>
   ${card('Who can review', '<div class="review-load" id="prLoad"></div>',
-    'free = no review requested from them on an open PR right now')}
+    'free = not a reviewer of a PR waiting for review or with changes requested (drafts not counted)')}
   <div class="toolbar">
     <select id="prAuthor"><option value="">All authors</option></select>
     <select id="prReviewer"><option value="">All reviewers</option></select>
@@ -43,18 +43,20 @@ function approvedThisWeek() {
 }
 
 /**
- * People who can take a review: the team (everyone who opened a PR, bots excluded) split into those with no
- * pending review request on any open PR (drafts included) and the others, with how many requests wait for them.
+ * People who can take a review: the team (everyone who opened a PR, bots excluded) split into those who are not
+ * a reviewer (requested, or already reviewed) of any PR of the "Needs review" / "Changes requested" columns, and
+ * the others, with how many of those PRs they review. Drafts and PRs approved this week (`approved`) don't count.
  */
-function reviewLoad() {
-  const pending = countBy(D.openPRs.flatMap((p) => p.reviewers));
+function reviewLoad(approved) {
+  const active = D.openPRs.filter((p) => !p.d && !approved.has(p.n));
+  const pending = countBy(active.flatMap((p) => reviewersOf(p.n).map((r) => r.login)));
   const team = uniq(D.prs.map((p) => p.a)).filter((l) => l && !P(l).bot);
   const pill = (login, hint = '') => `<span class="pill">${avatar(login, 'xs')}${nameOf(login)}${hint}</span>`;
   const free = team.filter((l) => !pending[l]).sort().map((l) => pill(l));
   const busy = Object.entries(pending).sort((a, b) => b[1] - a[1])
-    .map(([login, n]) => pill(login, ` · ${plural(n, 'request')}`));
+    .map(([login, n]) => pill(login, ` · ${plural(n, 'PR')}`));
   return `<div class="row"><b>Free</b>${free.join('') || '<span class="muted">nobody</span>'}</div>
-    <div class="row"><b>Already requested</b>${busy.join('') || '<span class="muted">nobody</span>'}</div>`;
+    <div class="row"><b>Reviewing</b>${busy.join('') || '<span class="muted">nobody</span>'}</div>`;
 }
 
 const column = (title, cards, sub = '') => `<div class="col">
@@ -82,13 +84,12 @@ function render() {
     ['Average age', `${avgAgeDays.toFixed(1)} d`],
   ]);
 
-  $('#prLoad').innerHTML = reviewLoad();
-
   const author = $('#prAuthor').value, reviewer = $('#prReviewer').value, staleOnly = $('#staleOnly').checked;
   const keep = (p) => (!author || p.a === author)
     && (!reviewer || reviewersOf(p.n).some((r) => r.login === reviewer))
     && (!staleOnly || (p.s === 'open' && isStale(p)));
   const approvedNumbers = new Set(approved.map((p) => p.n));
+  $('#prLoad').innerHTML = reviewLoad(approvedNumbers);
   const open = all.filter((p) => keep(p) && !approvedNumbers.has(p.n));
   const cols = columns().map(([title, inColumn]) =>
     column(title, open.filter(inColumn).sort((a, b) => ts(a.u) - ts(b.u)).map((p) => prCard(p)))); // least recently updated first
