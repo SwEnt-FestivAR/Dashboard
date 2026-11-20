@@ -261,7 +261,7 @@ node scripts/serve.mjs                                              # http://loc
 ```
 
 - ES modules don't load from `file://`, so always go through a server. `.claude/launch.json` starts `scripts/serve.mjs` for Claude Code's preview.
-- Without `GITHUB_TOKEN`, `hasToken` is false: PR reviews and CI status are null, the kanban shows 2 columns instead of 4, and `prs[].rv` / `size` are missing (GraphQL has no anonymous access), so the Reviews tab only shows cycle time. To check the Reviews UI locally, inject fake `rv`/`size` values into your local `site/data.json` (it is git-ignored), then re-run the fetch script to restore it.
+- Without `GITHUB_TOKEN`, `hasToken` is false: PR reviews and CI status are null, the kanban shows 2 columns instead of 4, and `prs[].rv` / `rq` / `add` / `del` are missing (GraphQL has no anonymous access), so the Reviews tab only shows cycle time. To check the Reviews UI locally, inject fake `rv`/`rq`/`add`/`del` values into your local `site/data.json` (it is git-ignored), then re-run the fetch script to restore it.
 - On Windows PowerShell, set variables with `$env:CACHE_DIR='.cache'`, or use Git Bash.
 
 ## 9. Checking a change

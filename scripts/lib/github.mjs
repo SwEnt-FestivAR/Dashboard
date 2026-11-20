@@ -48,14 +48,22 @@ const REVIEWS_QUERY = `query($owner: String!, $name: String!, $cursor: String) {
   repository(owner: $owner, name: $name) {
     pullRequests(first: 100, after: $cursor) {
       pageInfo { hasNextPage endCursor }
-      nodes { number additions deletions reviews(first: 50) { nodes { author { login __typename } state submittedAt } } }
+      nodes {
+        number additions deletions
+        reviews(first: 50) { nodes { author { login __typename } state submittedAt comments { totalCount } } }
+        timelineItems(itemTypes: [REVIEW_REQUESTED_EVENT], first: 50) {
+          nodes { ... on ReviewRequestedEvent { createdAt requestedReviewer { ... on User { login } } } }
+        }
+      }
     }
   }
 }`;
 
 /**
- * Size and reviews of every PR through GraphQL (100 PRs per call), which REST would need one call per PR for.
- * Needs GITHUB_TOKEN: GraphQL has no anonymous access. Returns { number: { size, rv: [[login, state, unix]] } }.
+ * Lines changed, reviews and review requests of every PR through GraphQL (100 PRs per call), which REST would
+ * need several calls per PR for. Needs GITHUB_TOKEN: GraphQL has no anonymous access.
+ * Returns { number: { add, del, rv: [[login, state, unix, line comments]], rq: [[login, unix]] } }.
+ * Line comments are the inline comments submitted with a review; requests to a team are skipped (no person).
  */
 export async function prReviews() {
   const [owner, name] = REPO.split('/');
@@ -73,10 +81,13 @@ export async function prReviews() {
     const page = json.data.repository.pullRequests;
     for (const pr of page.nodes) {
       out[pr.number] = {
-        size: pr.additions + pr.deletions,
+        add: pr.additions, del: pr.deletions,
         rv: pr.reviews.nodes.filter((r) => r.author && r.submittedAt).map((r) => [
           person(r.author.login, null, null, r.author.__typename === 'Bot'), REVIEW_STATES[r.state] || 'R', Date.parse(r.submittedAt) / 1000,
+          r.comments.totalCount,
         ]),
+        rq: pr.timelineItems.nodes.filter((e) => e.requestedReviewer?.login)
+          .map((e) => [person(e.requestedReviewer.login), Date.parse(e.createdAt) / 1000]),
       };
     }
     cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;

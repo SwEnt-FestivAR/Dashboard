@@ -18,12 +18,14 @@
 //   repo, siteRepo   "owner/name" of FestivAR and of this dashboard repo
 //   branch           FestivAR default branch (e.g. "main")
 //   generatedAt      ISO date of the run; the site uses it as "now"
-//   hasToken         false = openPRs[].review and .ci are null, prs[].size and .rv are missing
+//   hasToken         false = openPRs[].review and .ci are null, prs[].add, .del, .rv and .rq are missing
 //   people           { login: { login, name, avatar, bot } }
 //   commits          [[unix, login, linesAdded, linesDeleted], ...]  (merge commits excluded)
-//   prs              [{ n, title, a, s: "open"|"closed", d: draft, c: created, m: merged,
-//                       size: lines added + deleted, rv: [[reviewer, "A"pproved|"C"hanges requested|"R" commented|"D"ismissed, unix]] }]
-//                    size and rv only exist when hasToken (they come from GraphQL, see prReviews() in lib/github.mjs)
+//   prs              [{ n, title, a, s: "open"|"closed", d: draft, c: created, m: merged, cl: closed (merged or not),
+//                       add, del: lines added / deleted,
+//                       rv: [[reviewer, "A"pproved|"C"hanges requested|"R" commented|"D"ismissed, unix, line comments of the review]],
+//                       rq: [[requested reviewer, unix of the request]] }]
+//                    add, del, rv and rq only exist when hasToken (they come from GraphQL, see prReviews() in lib/github.mjs)
 //   issues           [{ n, title, s, r: state_reason, c: created, cl: closed, as: [assignees], ms: milestone title,
 //                       labels: [{name, color}] }]
 //   openPRs          [{ n, title, a, d, c, u: updated, branch, reviewers: [login], review: "none"|"commented"|"changes"|"approved"|null,
@@ -76,7 +78,7 @@ async function main() {
   const { commits, fileChanges } = readCommits(branch);
   const reviews = TOKEN ? await prReviews() : {};
   const prs = pulls.map((p) => ({
-    n: p.number, title: p.title, a: fromApiUser(p.user), s: p.state, d: !!p.draft, c: p.created_at, m: p.merged_at,
+    n: p.number, title: p.title, a: fromApiUser(p.user), s: p.state, d: !!p.draft, c: p.created_at, m: p.merged_at, cl: p.closed_at,
     ...reviews[p.number],
   }));
   const issues = issuesRaw.filter((i) => !i.pull_request).map((i) => ({ // the issues endpoint also returns PRs
