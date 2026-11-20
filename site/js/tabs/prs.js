@@ -101,7 +101,7 @@ function reviewersRow(n) {
   return `<div class="row reviewers">Reviewers: ${pills || '<span class="muted">none yet</span>'}</div>`;
 }
 
-/** Card of a PR approved this week: the full open-PR card, or a short card once merged. */
+/** Card of a PR approved this week: the full open-PR card, or a short card once merged (lines from GraphQL). */
 function approvedCard(p) {
   const approval = `<div class="row">Approved ${ago(p.approvedAt)}</div>`;
   const openPR = D.openPRs.find((o) => o.n === p.n);
@@ -109,6 +109,7 @@ function approvedCard(p) {
   return `<div class="pr">
     ${prLink(p)}
     <div class="row">${avatar(p.a, 'xs')} ${nameOf(p.a)} · <span class="pill ok">merged ${ago(ts(p.m))}</span></div>
+    <div class="row">${linesHtml(p.add, p.del)}</div>
     ${approval}
     ${reviewersRow(p.n)}
   </div>`;
