@@ -24,8 +24,9 @@
 //   prs              [{ n, title, a, s: "open"|"closed", d: draft, c: created, m: merged, cl: closed (merged or not),
 //                       add, del: lines added / deleted,
 //                       rv: [[reviewer, "A"pproved|"C"hanges requested|"R" commented|"D"ismissed, unix, line comments of the review]],
-//                       rq: [[requested reviewer, unix of the request]] }]
-//                    add, del, rv and rq only exist when hasToken (they come from GraphQL, see prReviews() in lib/github.mjs)
+//                       rq: [[requested reviewer, unix of the request]],
+//                       rdy: unix when a PR opened as a draft was first marked ready for review (absent if never a draft) }]
+//                    add, del, rv, rq and rdy only exist when hasToken (they come from GraphQL, see prReviews() in lib/github.mjs)
 //   issues           [{ n, title, s, r: state_reason, c: created, cl: closed, as: [assignees], ms: milestone title,
 //                       labels: [{name, color}] }]
 //   openPRs          [{ n, title, a, d, c, u: updated, branch, reviewers: [login], review: "none"|"commented"|"changes"|"approved"|null,

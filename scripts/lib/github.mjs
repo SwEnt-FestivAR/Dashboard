@@ -51,8 +51,12 @@ const REVIEWS_QUERY = `query($owner: String!, $name: String!, $cursor: String) {
       nodes {
         number additions deletions
         reviews(first: 50) { nodes { author { login __typename } state submittedAt comments { totalCount } } }
-        timelineItems(itemTypes: [REVIEW_REQUESTED_EVENT], first: 50) {
-          nodes { ... on ReviewRequestedEvent { createdAt requestedReviewer { ... on User { login } } } }
+        timelineItems(itemTypes: [REVIEW_REQUESTED_EVENT, READY_FOR_REVIEW_EVENT], first: 50) {
+          nodes {
+            __typename
+            ... on ReviewRequestedEvent { createdAt requestedReviewer { ... on User { login } } }
+            ... on ReadyForReviewEvent { createdAt }
+          }
         }
       }
     }
@@ -62,8 +66,9 @@ const REVIEWS_QUERY = `query($owner: String!, $name: String!, $cursor: String) {
 /**
  * Lines changed, reviews and review requests of every PR through GraphQL (100 PRs per call), which REST would
  * need several calls per PR for. Needs GITHUB_TOKEN: GraphQL has no anonymous access.
- * Returns { number: { add, del, rv: [[login, state, unix, line comments]], rq: [[login, unix]] } }.
+ * Returns { number: { add, del, rv: [[login, state, unix, line comments]], rq: [[login, unix]], rdy?: unix } }.
  * Line comments are the inline comments submitted with a review; requests to a team are skipped (no person).
+ * rdy = first time a PR opened as a draft was marked ready for review (absent when it never was a draft).
  */
 export async function prReviews() {
   const [owner, name] = REPO.split('/');
@@ -88,11 +93,18 @@ export async function prReviews() {
         ]),
         rq: pr.timelineItems.nodes.filter((e) => e.requestedReviewer?.login)
           .map((e) => [person(e.requestedReviewer.login), Date.parse(e.createdAt) / 1000]),
+        ...readyAt(pr.timelineItems.nodes),
       };
     }
     cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
   } while (cursor);
   return out;
+}
+
+/** { rdy: unix } of the first "ready for review" event, or {} when the PR never left draft mode that way. */
+function readyAt(events) {
+  const ready = events.find((e) => e.__typename === 'ReadyForReviewEvent');
+  return ready ? { rdy: Date.parse(ready.createdAt) / 1000 } : {};
 }
 
 /** Review state of an open PR from its latest non-comment review per reviewer. */
