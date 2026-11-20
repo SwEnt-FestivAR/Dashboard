@@ -1,16 +1,19 @@
 // Open PRs tab: KPIs and a kanban of open PRs. The last column holds the PRs approved during the current
 // week (Friday 12:00 → Friday 12:00), merged ones included; older approvals go back to "Needs review".
 // The review columns need review data, which only exists when the fetch had a token (D.hasToken).
+// Above the kanban, a "free to review" card lists who has no pending review request on an open PR.
 
-import { $, DAY, addWeeks, esc, fmtWeekDay, sumBy, ts, uniq, weekStart } from '../core/utils.js';
-import { D, NOW, ago, nameOf } from '../core/store.js';
-import { avatar, fillPeopleSelect, kpis, linesHtml, prLink } from '../core/ui.js';
+import { $, DAY, addWeeks, countBy, esc, fmtWeekDay, plural, sumBy, ts, uniq, weekStart } from '../core/utils.js';
+import { D, NOW, P, ago, nameOf } from '../core/store.js';
+import { avatar, card, fillPeopleSelect, kpis, linesHtml, prLink } from '../core/ui.js';
 import { approvalTimes, reviewersOf } from '../reviews/stats.js';
 
 const STALE_DAYS = 3;
 
 const html = `
   <div class="kpis" id="prKpis"></div>
+  ${card('Who can review', '<div class="review-load" id="prLoad"></div>',
+    'free = no review requested from them on an open PR right now')}
   <div class="toolbar">
     <select id="prAuthor"><option value="">All authors</option></select>
     <select id="prReviewer"><option value="">All reviewers</option></select>
@@ -39,6 +42,21 @@ function approvedThisWeek() {
     .sort((a, b) => b.approvedAt - a.approvedAt);
 }
 
+/**
+ * People who can take a review: the team (everyone who opened a PR, bots excluded) split into those with no
+ * pending review request on any open PR (drafts included) and the others, with how many requests wait for them.
+ */
+function reviewLoad() {
+  const pending = countBy(D.openPRs.flatMap((p) => p.reviewers));
+  const team = uniq(D.prs.map((p) => p.a)).filter((l) => l && !P(l).bot);
+  const pill = (login, hint = '') => `<span class="pill">${avatar(login, 'xs')}${nameOf(login)}${hint}</span>`;
+  const free = team.filter((l) => !pending[l]).sort().map((l) => pill(l));
+  const busy = Object.entries(pending).sort((a, b) => b[1] - a[1])
+    .map(([login, n]) => pill(login, ` · ${plural(n, 'request')}`));
+  return `<div class="row"><b>Free</b>${free.join('') || '<span class="muted">nobody</span>'}</div>
+    <div class="row"><b>Already requested</b>${busy.join('') || '<span class="muted">nobody</span>'}</div>`;
+}
+
 const column = (title, cards, sub = '') => `<div class="col">
   <div class="col-head"><span>${title}${sub ? `<br><span class="muted small">${sub}</span>` : ''}</span>
     <span class="pill">${cards.length}</span></div>
@@ -63,6 +81,8 @@ function render() {
     ...(D.hasToken ? [['Approved this week', approved.length]] : []),
     ['Average age', `${avgAgeDays.toFixed(1)} d`],
   ]);
+
+  $('#prLoad').innerHTML = reviewLoad();
 
   const author = $('#prAuthor').value, reviewer = $('#prReviewer').value, staleOnly = $('#staleOnly').checked;
   const keep = (p) => (!author || p.a === author)
