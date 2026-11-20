@@ -63,6 +63,9 @@ export function median(values) {
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
 }
 
+/** Mean of a list of numbers (null for an empty list). */
+export const mean = (values) => (values.length ? values.reduce((a, b) => a + b, 0) / values.length : null);
+
 /** Seconds -> "5h", "2.5d". */
 export function fmtDuration(sec) {
   if (sec == null) return '—';

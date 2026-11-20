@@ -58,7 +58,9 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
         ├── week/
         │   └── issues.js        This week: issues per person, unassigned user stories / tasks (+ their Markdown)
         ├── reviews/
-        │   └── stats.js         review / cycle time / PR size statistics, peer approvals, reviewers of a PR (pure logic)
+        │   ├── stats.js         peer reviews, reviewers of a PR, per-person review stats, who-reviews-whom (pure logic)
+        │   ├── flow.js          weekly line comments and open → close times, team-wide averages, PR sizes (pure logic)
+        │   └── tables.js        HTML of the per-person, overall and who-reviews-whom tables
         ├── code/
         │   ├── files.js         Kotlin files of data.files: shown files, folder tree, "uses" links, area colors (pure logic)
         │   ├── file-radial.js   SVG radial tree of those files, with "uses" curves (hand-made layout)
@@ -70,7 +72,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
             ├── week.js
             ├── screens.js
             ├── prs.js
-            ├── reviews.js       review stats, who-reviews-whom matrix, cycle time, PR sizes
+            ├── reviews.js       per-person review charts and table, weekly charts, overall table, matrix, PR sizes
             ├── milestones.js
             ├── code.js          file graph and list + navigation graph + hotspots (data.files, data.navigation, data.hotspots)
             ├── trends.js        curves from history.json (loaded on first display)
@@ -261,7 +263,7 @@ node scripts/serve.mjs                                              # http://loc
 ```
 
 - ES modules don't load from `file://`, so always go through a server. `.claude/launch.json` starts `scripts/serve.mjs` for Claude Code's preview.
-- Without `GITHUB_TOKEN`, `hasToken` is false: PR reviews and CI status are null, the kanban shows 2 columns instead of 4, and `prs[].rv` / `rq` / `add` / `del` are missing (GraphQL has no anonymous access), so the Reviews tab only shows cycle time. To check the Reviews UI locally, inject fake `rv`/`rq`/`add`/`del` values into your local `site/data.json` (it is git-ignored), then re-run the fetch script to restore it.
+- Without `GITHUB_TOKEN`, `hasToken` is false: PR reviews and CI status are null, the kanban shows 2 columns instead of 4, and `prs[].rv` / `rq` / `add` / `del` are missing (GraphQL has no anonymous access), so the Reviews tab only shows open → close times. To check the Reviews UI locally, inject fake `rv`/`rq`/`add`/`del` values into your local `site/data.json` (it is git-ignored), then re-run the fetch script to restore it.
 - On Windows PowerShell, set variables with `$env:CACHE_DIR='.cache'`, or use Git Bash.
 
 ## 9. Checking a change

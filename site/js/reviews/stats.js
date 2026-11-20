@@ -1,20 +1,16 @@
-// Review and PR-flow statistics, computed from D.prs (rv and size exist only when the fetch had a token).
-// Self-reviews and bots are ignored everywhere.
+// Per-person review statistics, computed from D.prs (rv and rq exist only when the fetch had a token).
+// Self-reviews, requests to oneself and bots are ignored everywhere.
 
-import { median, sumBy, ts, weekStart } from '../core/utils.js';
+import { mean, median, ts } from '../core/utils.js';
 import { D, P } from '../core/store.js';
 
-/** PR size buckets, by lines added + deleted. */
-export const SIZES = [['S', 100], ['M', 400], ['L', 1000], ['XL', Infinity]];
-const sizeOf = (lines) => SIZES.find(([, max]) => lines < max)[0];
+export const isHuman = (login) => login && !P(login).bot;
 
-const isHuman = (login) => login && !P(login).bot;
-
-/** Reviews of a PR by people other than its author, oldest first: [{ login, state, t }]. */
-function peerReviews(pr) {
+/** Reviews of a PR by people other than its author, oldest first: [{ login, state, t, lc: line comments }]. */
+export function peerReviews(pr) {
   return (pr.rv || [])
     .filter(([login]) => login !== pr.a && isHuman(login))
-    .map(([login, state, t]) => ({ login, state, t }))
+    .map(([login, state, t, lc = 0]) => ({ login, state, t, lc }))
     .sort((a, b) => a.t - b.t);
 }
 
@@ -38,35 +34,21 @@ export function reviewersOf(n) {
 }
 
 /** Seconds from opening a PR to its first peer review (null when never reviewed). */
-const firstReviewWait = (pr) => {
+export const firstReviewWait = (pr) => {
   const first = peerReviews(pr)[0];
   return first ? first.t - ts(pr.c) : null;
 };
 
 /**
- * Per person: PRs reviewed (distinct PRs of others), reviews submitted, approvals, change requests,
- * PRs authored and the median wait before the first review of their own PRs. Sorted by PRs reviewed.
+ * Answer times of the review requests of a PR: [{ login, wait }], where wait = seconds from the request to the
+ * requested person's first review submitted after it. Requests never answered are left out (no time to measure).
  */
-export function reviewerStats() {
-  const st = {};
-  const get = (login) => (st[login] ||= { login, reviewed: 0, reviews: 0, approvals: 0, changes: 0, authored: 0, waits: [] });
-  for (const pr of D.prs.filter((p) => isHuman(p.a))) {
-    const author = get(pr.a);
-    author.authored++;
-    const wait = firstReviewWait(pr);
-    if (wait != null) author.waits.push(wait);
-    const reviews = peerReviews(pr);
-    for (const login of new Set(reviews.map((r) => r.login))) get(login).reviewed++;
-    for (const r of reviews) {
-      const s = get(r.login);
-      s.reviews++;
-      if (r.state === 'A') s.approvals++;
-      if (r.state === 'C') s.changes++;
-    }
-  }
-  return Object.values(st)
-    .map((s) => ({ ...s, medianWait: median(s.waits) }))
-    .sort((a, b) => b.reviewed - a.reviewed);
+function requestWaits(pr) {
+  const reviews = peerReviews(pr);
+  return (pr.rq || []).filter(([login]) => login !== pr.a && isHuman(login)).flatMap(([login, t]) => {
+    const answer = reviews.find((r) => r.login === login && r.t >= t);
+    return answer ? [{ login, wait: answer.t - t }] : [];
+  });
 }
 
 /** matrix[reviewer][author] = number of PRs of `author` reviewed by `reviewer`. */
@@ -81,26 +63,40 @@ export function reviewMatrix() {
   return m;
 }
 
-/** Merged PRs grouped by the week they were merged: [{ week, cycle: median open→merge seconds, n }]. */
-export function weeklyCycleTime() {
-  const weeks = {};
-  for (const pr of D.prs.filter((p) => p.m && isHuman(p.a))) {
-    const w = weekStart(ts(pr.m));
-    (weeks[w] ||= []).push(ts(pr.m) - ts(pr.c));
-  }
-  return Object.entries(weeks).sort((a, b) => a[0] - b[0]).map(([week, cycles]) => ({ week: Number(week), cycle: median(cycles), n: cycles.length }));
-}
+/** The author whose PRs `login` reviewed the most, from a reviewMatrix() (null when none). */
+const topReviewee = (m, login) => Object.entries(m[login] || {}).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
 
-/** Overall numbers for the KPI row. */
-export function overview() {
-  const merged = D.prs.filter((p) => p.m && isHuman(p.a));
-  const waits = D.prs.map(firstReviewWait).filter((w) => w != null);
-  const sized = D.prs.filter((p) => p.size != null);
-  return {
-    reviews: sumBy(D.prs, (pr) => peerReviews(pr).length),
-    medianWait: median(waits),
-    medianCycle: median(merged.map((p) => ts(p.m) - ts(p.c))),
-    unreviewedMerged: merged.filter((p) => p.rv && !peerReviews(p).length).length,
-    sizes: Object.fromEntries(SIZES.map(([s]) => [s, sized.filter((p) => sizeOf(p.size) === s).length])),
-  };
+/**
+ * Per person, sorted by reviews submitted: reviews, distinct PRs of others reviewed, line comments (total and
+ * per review), median wait before the first review of their own PRs, mean open → merge of their own PRs and
+ * of the PRs of others they reviewed, who they review most, and mean / median time from a review request
+ * to their review.
+ */
+export function reviewerStats() {
+  const st = {};
+  const get = (login) => (st[login] ||= { login, reviews: 0, reviewed: 0, lc: 0, waits: [], ownCycles: [], reviewedCycles: [], answers: [] });
+  for (const pr of D.prs.filter((p) => isHuman(p.a))) {
+    const author = get(pr.a);
+    const cycle = pr.m ? ts(pr.m) - ts(pr.c) : null;
+    if (cycle != null) author.ownCycles.push(cycle);
+    const wait = firstReviewWait(pr);
+    if (wait != null) author.waits.push(wait);
+    const reviews = peerReviews(pr);
+    for (const r of reviews) {
+      get(r.login).reviews++;
+      get(r.login).lc += r.lc;
+    }
+    for (const login of new Set(reviews.map((r) => r.login))) {
+      get(login).reviewed++;
+      if (cycle != null) get(login).reviewedCycles.push(cycle);
+    }
+    for (const { login, wait: w } of requestWaits(pr)) get(login).answers.push(w);
+  }
+  const m = reviewMatrix();
+  return Object.values(st).map((s) => ({
+    login: s.login, reviews: s.reviews, reviewed: s.reviewed, lineComments: s.lc,
+    lcPerReview: s.reviews ? s.lc / s.reviews : null,
+    medianWait: median(s.waits), ownCycle: mean(s.ownCycles), reviewedCycle: mean(s.reviewedCycles),
+    topReviewee: topReviewee(m, s.login), meanAnswer: mean(s.answers), medianAnswer: median(s.answers),
+  })).sort((a, b) => b.reviews - a.reviews || b.reviewed - a.reviewed);
 }
