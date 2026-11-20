@@ -1,39 +1,54 @@
-// Reviews tab: per-person review charts and table, weekly line comments and open → close times, team-wide
+// Reviews tab: per-person review charts and table, weekly line comments and PR closing times, team-wide
 // averages, who reviews whom, and PR sizes. Review data needs a token: the automatic GITHUB_TOKEN of GitHub
 // Actions provides it on the deployed site (nothing to configure). Open → close times work without it.
 
 import { $, DAY, css, fmtShortDate, plural } from '../core/utils.js';
 import { D } from '../core/store.js';
-import { card, chart, chartCard, chartOptions, kpis, peopleBarChart } from '../core/ui.js';
+import { card, chart, chartBox, chartOptions, kpis, peopleBarChart } from '../core/ui.js';
 import { reviewerStats } from '../reviews/stats.js';
 import { SIZES, overview, weeklyCloseTimes, weeklyLineComments } from '../reviews/flow.js';
 import { matrixTable, overallTable, personTable } from '../reviews/tables.js';
 
-/** "S < 100 · M < 400 · L < 1000 · XL more". */
-const sizeLegend = SIZES.map(([s, max]) => (max === Infinity ? `${s} more` : `${s} &lt; ${max}`)).join(' · ');
+/** "S (under 100) · M (under 400) · L (under 1000) · XL (1000 or more)". */
+const sizeLegend = SIZES.map(([s, max], i) => (max === Infinity ? `${s} (${SIZES[i - 1][1]} or more)` : `${s} (under ${max})`)).join(' · ');
+
+/** A card whose body starts with a sentence saying what it shows and how to read it. */
+const explained = (title, sentence, body) => card(title, `<p class="muted small explain">${sentence}</p>${body}`);
 
 const html = `
   <div class="card notice" id="reviewNotice" hidden>Review data comes from the GitHub GraphQL API, which needs a token.
-    The deployed site gets one automatically from GitHub Actions (nothing to configure); locally, only open → close times are available.</div>
+    The deployed site gets one automatically from GitHub Actions (nothing to configure); locally, only PR closing times are available.</div>
   <div class="kpis" id="reviewKpis"></div>
   <div class="grid3">
-    ${chartCard('Reviews done', 'reviewedChart', 'reviews submitted on PRs of others')}
-    ${chartCard('Wait before first review', 'waitChart', 'median on their PRs, hours')}
-    ${chartCard('Request → review', 'answerChart', 'median from a request to their review, hours')}
+    ${explained('Reviews given', `How many reviews each person submitted on <b>other people's</b> PRs (approve, request changes
+      or comment). Two reviews on the same PR count twice.`, chartBox('reviewedChart'))}
+    ${explained('Waiting for a first review', `For the PRs <b>this person opened</b>: median time, in hours, between the PR being
+      ready for review (opened, or taken out of draft) and the first review by someone else. A long bar means their PRs
+      wait long. Time spent as a draft is not counted.`, chartBox('waitChart'))}
+    ${explained('Answering review requests', `Median time, in hours, between someone <b>asking this person</b> for a review and
+      this person submitting it. A short bar means they answer fast. Requests never answered are not counted.`, chartBox('answerChart'))}
   </div>
   <div class="grid2">
-    ${chartCard('Line comments', 'commentsChart', 'inline review comments per week')}
-    ${chartCard('Open → close', 'closeChart', 'PRs closed per week, days')}
+    ${explained('Line comments per week', `Comments written <b>on a specific line of code</b> during reviews, per week
+      (Friday 12:00 → Friday 12:00). General review comments are not counted.`, chartBox('commentsChart'))}
+    ${explained('Time to close a PR, per week', `For the PRs closed each week (merged or not): average and median time, in days,
+      between being ready for review (opened, or taken out of draft) and closing. Drafts are left out. The median is the typical PR; the average is pulled up by a few PRs that stayed open long.`,
+      chartBox('closeChart'))}
   </div>
-  ${card('Per person', '<div class="table-box" id="reviewPeople"></div>', 'hover a header for its definition')}
+  ${explained('Review stats per person', 'One row per person. What each column means is explained under the table.',
+    '<div class="table-box" id="reviewPeople"></div>')}
   <div class="grid2">
-    ${card('Overall', '<div class="table-box" id="reviewOverall"></div>', 'over all PRs')}
-    ${chartCard('PR sizes', 'sizeChart', `lines changed: ${sizeLegend}`)}
+    ${explained('Team averages', `Over all PRs of the team. The <b>mean</b> is the plain average; the <b>median</b> is the value
+      in the middle, i.e. the typical PR, not pulled up by a few extreme ones.`, '<div class="table-box" id="reviewOverall"></div>')}
+    ${explained('PR sizes', `Number of PRs by lines changed (added + deleted): ${sizeLegend}. Small PRs are reviewed faster
+      and better.`, chartBox('sizeChart'))}
   </div>
-  ${card('Who reviews whom', '<div class="matrix-box" id="reviewMatrix"></div>', 'rows review the PRs of columns')}`;
+  ${explained('Who reviews whom', `Each cell is how many PRs of the person in the <b>column</b> were reviewed by the person in the
+    <b>row</b>; darker means more. An empty row is someone who never reviews; an empty column, someone never reviewed.`,
+    '<div class="matrix-box" id="reviewMatrix"></div>')}`;
 
 const hasReviews = () => D.prs.some((p) => p.rv);
-const hours = (sec) => Math.round(sec / 3600);
+const hours = (sec) => Math.round(sec / 360) / 10; // one decimal, so 20 minutes shows as 0.3 h, not 0
 
 function render() {
   const o = overview();

@@ -31,9 +31,11 @@ export const card = (title, body, sub = '') => `<div class="card">
 /** A card holding an empty <ul id> that the tab fills in render(). */
 export const listCard = (title, listId, sub = '') => card(title, `<ul class="issue-list" id="${listId}"></ul>`, sub);
 
-/** A card holding an empty <canvas id> for chart(); `tall` gives it more height. */
-export const chartCard = (title, canvasId, sub = '', tall = false) =>
-  card(title, `<div class="chart-box${tall ? ' tall' : ''}"><canvas id="${canvasId}"></canvas></div>`, sub);
+/** An empty <canvas id> for chart(), in a .chart-box that gives it its height; `tall` gives it more. */
+export const chartBox = (canvasId, tall = false) => `<div class="chart-box${tall ? ' tall' : ''}"><canvas id="${canvasId}"></canvas></div>`;
+
+/** A card holding a chartBox(). */
+export const chartCard = (title, canvasId, sub = '', tall = false) => card(title, chartBox(canvasId, tall), sub);
 
 /** <li> items of a list built with `row`, or a single "empty" item with the `empty` text. */
 export const listItems = (items, row, empty) => items.map(row).join('') || `<li class="empty">${empty}</li>`;

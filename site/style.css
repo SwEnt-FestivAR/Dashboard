@@ -173,10 +173,13 @@ a.pill:hover { text-decoration: none; filter: brightness(1.1); }
 .matrix-box, .table-box { overflow-x: auto; }
 .stat-table { border-collapse: collapse; width: 100%; font-size: 13px; }
 .stat-table th, .stat-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
-.stat-table thead th { color: var(--muted); font-size: 12px; font-weight: 500; cursor: help; }
+.stat-table thead th { color: var(--muted); font-size: 12px; font-weight: 500; white-space: normal; vertical-align: bottom; min-width: 80px; }
 .stat-table tbody th { text-align: left; font-weight: 500; white-space: normal; }
 .stat-table tr:last-child > * { border-bottom: none; }
 .stat-table .who { display: inline-flex; align-items: center; gap: 6px; }
+.stat-table tbody th .small { font-weight: 400; margin-top: 2px; }
+.explain { margin: -6px 0 12px; }
+.defs { margin: 14px 0 0; padding-left: 18px; display: grid; gap: 4px; }
 .matrix { border-collapse: separate; border-spacing: 3px; }
 .matrix th { font-weight: 500; padding: 2px; }
 .matrix th.who { display: flex; align-items: center; gap: 8px; text-align: left; white-space: nowrap; padding-right: 10px; }
