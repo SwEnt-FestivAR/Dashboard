@@ -59,7 +59,7 @@ This repo is a static dashboard about the Android app repo [SwEnt-FestivAR/Festi
         │   └── issues.js        This week: issues per person, unassigned user stories / tasks (+ their Markdown)
         ├── reviews/
         │   ├── stats.js         peer reviews, reviewers of a PR, per-person review stats, who-reviews-whom (pure logic)
-        │   ├── flow.js          weekly line comments and open → close times, team-wide averages, PR sizes (pure logic)
+        │   ├── flow.js          weekly line comments and PR closing times, team-wide averages, PR sizes (pure logic)
         │   └── tables.js        HTML of the per-person, overall and who-reviews-whom tables
         ├── code/
         │   ├── files.js         Kotlin files of data.files: shown files, folder tree, "uses" links, area colors (pure logic)
@@ -147,6 +147,7 @@ export default {
 - **Hotspots** (`hotspots()` in `scripts/lib/repo.mjs`): score out of 100 = 50% usages + 30% heat + 20% lines, where each criterion is a mid-rank percentile among production files (`app/src/main`). Usages = other production files mentioning the file's class name; heat = recency-weighted activity (each change halved every 14 days, weighted by log of lines changed). The priority order (usages > activity > size) was chosen by the team: change `WEIGHTS` there if it changes, and update the explanation text in `tabs/code.js` and the README.
 - **Navigation graph**: `navigationGraph()` in `scripts/lib/navigation.mjs` reads the `AppScreens` enum (nodes), then each `composable(route = AppScreens.X…)` block of the NavGraph files: the `navigator.onY` actions it wires (looked up in the `class …Navigator` files, which can be shared by several screens) and its own `navigate()` / `popBackStack()` calls (in the block or in a helper function of the file it calls, like `RedirectToLogin`) give the edges of X. If FestivAR changes this convention, update that function. On the site, columns and rows are ordered by distance from the start screen. The bottom bar (`bottomBar()`) comes from the `NavigationTab.X -> AppScreens.Y` branches (where each tab goes) and the `AppScreens.X -> BottomBarState` branches (which screens show the bar).
 - **Files** (`fileGraph()` in `scripts/lib/files.mjs`): every Kotlin file of `app/src`, linked to the files whose class (file name) it mentions, the same signal as the hotspot usages. The site shows them twice, from the same folder tree (`folderTree()` in `code/files.js`, single-folder chains merged) and area colors (`--cat-<n>` tokens): a radial graph (`code/file-radial.js`) and a collapsible list (`code/file-tree.js`). Selecting a file in either marks what it uses and what uses it in both, and lists them in a panel.
+- **Ready for review** (`readyAt` in `reviews/stats.js`): every PR time of the Reviews tab (wait for a first review, time to close or merge) starts when the PR was opened, or when it was first taken out of draft (`prs[].rdy`). PRs still in draft or closed as drafts are left out of those times.
 - **Solved issues** (`isCompleted` in `core/store.js`): closed as completed. Issues closed as "not planned" never count as solved (Contributors, This week, Profile).
 - **User stories vs tasks** (`isUserStory` in `week/issues.js`): an issue is a user story if it has the "user story" label or a title starting with `US-<number>`; every other issue is a task.
 - **Issues of a screen** (`unitIssues`) = open issues whose normalized title contains the screen key, plus the numbers listed in `status.json → screens[id].issues`.
@@ -263,7 +264,7 @@ node scripts/serve.mjs                                              # http://loc
 ```
 
 - ES modules don't load from `file://`, so always go through a server. `.claude/launch.json` starts `scripts/serve.mjs` for Claude Code's preview.
-- Without `GITHUB_TOKEN`, `hasToken` is false: PR reviews and CI status are null, the kanban shows 2 columns instead of 4, and `prs[].rv` / `rq` / `add` / `del` are missing (GraphQL has no anonymous access), so the Reviews tab only shows open → close times. To check the Reviews UI locally, inject fake `rv`/`rq`/`add`/`del` values into your local `site/data.json` (it is git-ignored), then re-run the fetch script to restore it.
+- Without `GITHUB_TOKEN`, `hasToken` is false: PR reviews and CI status are null, the kanban shows 2 columns instead of 4, and `prs[].rv` / `rq` / `add` / `del` / `rdy` are missing (GraphQL has no anonymous access), so the Reviews tab only shows open → close times. To check the Reviews UI locally, inject fake `rv`/`rq`/`add`/`del` values into your local `site/data.json` (it is git-ignored), then re-run the fetch script to restore it.
 - On Windows PowerShell, set variables with `$env:CACHE_DIR='.cache'`, or use Git Bash.
 
 ## 9. Checking a change

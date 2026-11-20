@@ -1,10 +1,17 @@
 // Per-person review statistics, computed from D.prs (rv and rq exist only when the fetch had a token).
-// Self-reviews, requests to oneself and bots are ignored everywhere.
+// Self-reviews, requests to oneself and bots are ignored everywhere. Times measured from a PR's opening start
+// when it was ready for review (readyAt), so time spent as a draft is not counted.
 
 import { mean, median, ts } from '../core/utils.js';
 import { D, P } from '../core/store.js';
 
 export const isHuman = (login) => login && !P(login).bot;
+
+/**
+ * Unix time from which a PR waits for review: when it was marked ready (rdy) if it was opened as a draft, else
+ * its creation. Null while it is a draft, or if it was closed as one: those PRs never waited for a review.
+ */
+export const readyAt = (pr) => (pr.d ? null : pr.rdy ?? ts(pr.c));
 
 /** Reviews of a PR by people other than its author, oldest first: [{ login, state, t, lc: line comments }]. */
 export function peerReviews(pr) {
@@ -33,10 +40,13 @@ export function reviewersOf(n) {
   return Object.entries(latest).map(([login, state]) => ({ login, state }));
 }
 
-/** Seconds from opening a PR to its first peer review (null when never reviewed). */
+/**
+ * Seconds from a PR being ready for review to its first peer review (null when never reviewed or still a draft).
+ * A review already given while it was a draft counts as no wait (0).
+ */
 export const firstReviewWait = (pr) => {
   const first = peerReviews(pr)[0];
-  return first ? first.t - ts(pr.c) : null;
+  return first && readyAt(pr) != null ? Math.max(0, first.t - readyAt(pr)) : null;
 };
 
 /**
@@ -68,7 +78,7 @@ const topReviewee = (m, login) => Object.entries(m[login] || {}).sort((a, b) => 
 
 /**
  * Per person, sorted by reviews submitted: reviews, distinct PRs of others reviewed, line comments (total and
- * per review), median wait before the first review of their own PRs, mean open → merge of their own PRs and
+ * per review), median wait before the first review of their own PRs, mean ready → merge of their own PRs and
  * of the PRs of others they reviewed, who they review most, and mean / median time from a review request
  * to their review.
  */
@@ -77,7 +87,7 @@ export function reviewerStats() {
   const get = (login) => (st[login] ||= { login, reviews: 0, reviewed: 0, lc: 0, waits: [], ownCycles: [], reviewedCycles: [], answers: [] });
   for (const pr of D.prs.filter((p) => isHuman(p.a))) {
     const author = get(pr.a);
-    const cycle = pr.m ? ts(pr.m) - ts(pr.c) : null;
+    const cycle = pr.m && readyAt(pr) != null ? ts(pr.m) - readyAt(pr) : null;
     if (cycle != null) author.ownCycles.push(cycle);
     const wait = firstReviewWait(pr);
     if (wait != null) author.waits.push(wait);

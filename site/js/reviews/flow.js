@@ -3,15 +3,15 @@
 
 import { addWeeks, mean, median, sumBy, ts, weekStart } from '../core/utils.js';
 import { D } from '../core/store.js';
-import { firstReviewWait, isHuman, peerReviews } from './stats.js';
+import { firstReviewWait, isHuman, peerReviews, readyAt } from './stats.js';
 
 /** PR size buckets, by lines added + deleted. */
 export const SIZES = [['S', 100], ['M', 400], ['L', 1000], ['XL', Infinity]];
 const sizeOf = (lines) => SIZES.find(([, max]) => lines < max)[0];
 
 const humanPRs = () => D.prs.filter((p) => isHuman(p.a));
-/** Seconds from opening to closing (merged or not); null while open. */
-const closeTime = (pr) => (pr.cl ? ts(pr.cl) - ts(pr.c) : null);
+/** Seconds from being ready for review (see readyAt) to closing, merged or not; null while open or for drafts. */
+const closeTime = (pr) => (pr.cl && readyAt(pr) != null ? ts(pr.cl) - readyAt(pr) : null);
 const meanMedian = (values) => ({ mean: mean(values), median: median(values) });
 
 /** Every week start from the week of `first` to `last`, both included. */
@@ -21,10 +21,10 @@ function weeksBetween(first, last) {
   return out;
 }
 
-/** Closed PRs grouped by the week they were closed: [{ week, mean, median: open → close seconds, n }]. */
+/** Closed PRs (drafts excluded) grouped by the week they were closed: [{ week, mean, median: ready → close seconds, n }]. */
 export function weeklyCloseTimes() {
   const weeks = {};
-  for (const pr of humanPRs().filter((p) => p.cl)) (weeks[weekStart(ts(pr.cl))] ||= []).push(closeTime(pr));
+  for (const pr of humanPRs().filter((p) => closeTime(p) != null)) (weeks[weekStart(ts(pr.cl))] ||= []).push(closeTime(pr));
   return Object.entries(weeks).sort((a, b) => a[0] - b[0])
     .map(([week, times]) => ({ week: Number(week), ...meanMedian(times), n: times.length }));
 }
@@ -40,8 +40,8 @@ export function weeklyLineComments() {
 }
 
 /**
- * Team-wide numbers: KPI counts, PR sizes, and { mean, median } of open → first review (reviewed PRs),
- * open → close (closed PRs), and line comments and reviews per merged PR (merged = final counts).
+ * Team-wide numbers: KPI counts, PR sizes, and { mean, median } of ready → first review (reviewed PRs),
+ * ready → close (closed PRs, drafts excluded), and line comments and reviews per merged PR (merged = final counts).
  */
 export function overview() {
   const prs = humanPRs();
