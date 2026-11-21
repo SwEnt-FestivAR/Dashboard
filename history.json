@@ -199,11 +199,11 @@
  },
  {
   "d": "2026-11-21",
-  "prsOpen": 12,
+  "prsOpen": 11,
   "prsDraft": 5,
-  "issuesOpen": 92,
+  "issuesOpen": 91,
   "issuesUnassigned": 10,
-  "issuesClosed": 275,
+  "issuesClosed": 276,
   "screens": {
    "planned": 1,
    "in-dev": 18,
