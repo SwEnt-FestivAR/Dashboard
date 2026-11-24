@@ -242,14 +242,14 @@
  {
   "d": "2026-11-24",
   "prsOpen": 13,
-  "prsDraft": 3,
-  "issuesOpen": 87,
-  "issuesUnassigned": 12,
-  "issuesClosed": 284,
+  "prsDraft": 5,
+  "issuesOpen": 96,
+  "issuesUnassigned": 20,
+  "issuesClosed": 286,
   "screens": {
-   "planned": 0,
-   "in-dev": 18,
-   "developed": 1,
+   "planned": 1,
+   "in-dev": 17,
+   "developed": 2,
    "finalized": 0
   }
  }
