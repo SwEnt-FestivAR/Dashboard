@@ -241,11 +241,11 @@
  },
  {
   "d": "2026-11-24",
-  "prsOpen": 15,
-  "prsDraft": 7,
-  "issuesOpen": 96,
+  "prsOpen": 13,
+  "prsDraft": 6,
+  "issuesOpen": 95,
   "issuesUnassigned": 20,
-  "issuesClosed": 286,
+  "issuesClosed": 288,
   "screens": {
    "planned": 1,
    "in-dev": 18,
