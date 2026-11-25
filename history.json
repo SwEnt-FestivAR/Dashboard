@@ -255,11 +255,11 @@
  },
  {
   "d": "2026-11-25",
-  "prsOpen": 15,
+  "prsOpen": 17,
   "prsDraft": 3,
-  "issuesOpen": 95,
+  "issuesOpen": 94,
   "issuesUnassigned": 20,
-  "issuesClosed": 290,
+  "issuesClosed": 291,
   "screens": {
    "planned": 1,
    "in-dev": 19,
