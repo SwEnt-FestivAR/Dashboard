@@ -22,10 +22,12 @@ const HALF_LIFE_DAYS = 14; // a change counts half as much after two weeks (two 
  * hotspots need: commits touching it, by whom, when last, and its recent activity `heat`.
  * heat = Σ over its commits of 0.5^(age / HALF_LIFE_DAYS) × log2(1 + lines changed in the file), where the
  * age is measured from the newest commit (so the score does not depend on when the script runs).
- * Returns { commits: [[unix, login, added, deleted]], fileChanges: { path: { n, heat, last, authors: { login: n } } } }.
+ * Each commit also gets `landed`, when it reached the branch (see landingTimes()).
+ * Returns { commits: [[unix, login, added, deleted, landed]], fileChanges: { path: { n, heat, last, authors: { login: n } } } }.
  */
 export function readCommits(branch) {
   const log = git('log', branch, '--format=%x1e%H%x1f%P%x1f%an%x1f%ae%x1f%at', '--numstat');
+  const landed = landingTimes(branch);
   const commits = [];
   const fileChanges = {};
   let newest = null;
@@ -49,9 +51,37 @@ export function readCommits(branch) {
       fc.heat += decay * Math.log2(1 + changed);
       fc.authors[login] = (fc.authors[login] || 0) + 1;
     }
-    commits.push([t, login, add, del]);
+    commits.push([t, login, add, del, landed.get(sha)]);
   }
   return { commits, fileChanges };
+}
+
+/**
+ * Map sha -> unix when the commit reached the branch: the committer date of the first-parent commit of the
+ * branch that brought it in, i.e. the merge commit of its PR (or the commit itself when pushed directly).
+ * Walks the first-parent chain from oldest to newest: everything reachable from a merge that is not yet
+ * claimed was brought in by that merge, since older merges already claimed all of their ancestors.
+ */
+function landingTimes(branch) {
+  const parents = new Map(), committed = new Map();
+  for (const line of git('log', branch, '--format=%H %ct %P').split('\n').filter(Boolean)) {
+    const [sha, ct, ...ps] = line.split(' ');
+    parents.set(sha, ps);
+    committed.set(sha, Number(ct));
+  }
+  const chain = [];
+  for (let sha = git('rev-parse', branch).trim(); sha; sha = parents.get(sha)?.[0]) chain.push(sha);
+  const landed = new Map();
+  for (const merge of chain.reverse()) {
+    const stack = [merge];
+    while (stack.length) {
+      const sha = stack.pop();
+      if (landed.has(sha) || !parents.has(sha)) continue;
+      landed.set(sha, committed.get(merge));
+      stack.push(...parents.get(sha));
+    }
+  }
+  return landed;
 }
 
 // Weights of the hotspot criteria (they sum to 1): how widely the file is used matters most, then how much

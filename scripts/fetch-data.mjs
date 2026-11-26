@@ -20,7 +20,8 @@
 //   generatedAt      ISO date of the run; the site uses it as "now"
 //   hasToken         false = openPRs[].review and .ci are null, prs[].add, .del, .rv and .rq are missing
 //   people           { login: { login, name, avatar, bot } }
-//   commits          [[unix, login, linesAdded, linesDeleted], ...]  (merge commits excluded)
+//   commits          [[unix, login, linesAdded, linesDeleted, landed], ...]  (merge commits excluded; landed = unix when it
+//                    reached the default branch, i.e. when its PR was merged, see landingTimes() in lib/repo.mjs)
 //   prs              [{ n, title, a, s: "open"|"closed", d: draft, c: created, m: merged, cl: closed (merged or not),
 //                       add, del: lines added / deleted,
 //                       rv: [[reviewer, "A"pproved|"C"hanges requested|"R" commented|"D"ismissed, unix, line comments of the review]],

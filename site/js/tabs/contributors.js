@@ -144,11 +144,13 @@ function renderLinesChart(stats) {
 /**
  * Weekly events of the chosen metric: [unix, login, up, down]. Commits and merged PRs count 1 each; for lines,
  * up = lines added and down = lines deleted by each commit (merge commits excluded by the fetch script).
+ * Commits and lines are dated when they landed on main (their PR's merge), not when they were written, so
+ * the work of a PR shows up in the week it was merged.
  */
 function weeklyEvents(from) {
   if (state.timeMetric === 'merged') return D.prs.filter((p) => p.m && ts(p.m) >= from).map((p) => [ts(p.m), p.a, 1, 0]);
   const lines = state.timeMetric === 'lines';
-  return D.commits.filter((c) => c.t >= from).map((c) => [c.t, c.a, lines ? c.add : 1, lines ? c.del : 0]);
+  return D.commits.filter((c) => c.landed >= from).map((c) => [c.landed, c.a, lines ? c.add : 1, lines ? c.del : 0]);
 }
 
 /**
@@ -179,7 +181,8 @@ function renderWeeklyChart(logins) {
   const tooltip = { itemSort: (a, b) => Math.abs(b.raw) - Math.abs(a.raw), filter: (item) => item.raw !== 0 };
   if (lines) tooltip.callbacks = { label: (c) => `${c.dataset.label}: ${c.raw > 0 ? '+' : '−'}${fmtNum(Math.abs(c.raw))}` };
   const options = chartOptions({ legend: true, stacked: true, tooltip });
-  options.scales.x.title = { display: true, text: 'Week starting Friday 12:00' };
+  const dated = state.timeMetric === 'merged' ? '' : ', commits dated by their PR merge';
+  options.scales.x.title = { display: true, text: `Week starting Friday 12:00${dated}` };
   if (lines) {
     options.scales.y.ticks.callback = (v) => fmtNum(Math.abs(v));
     options.plugins.legend.labels.filter = (item, data) => !data.datasets[item.datasetIndex].deleted;

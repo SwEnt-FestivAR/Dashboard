@@ -23,7 +23,7 @@ export function initStore(data, status) {
   Object.values(D.people)
     .sort((a, b) => a.login.localeCompare(b.login))
     .forEach((p, i) => (p.color = PALETTE[i % PALETTE.length]));
-  D.commits = D.commits.map(([t, a, add, del]) => ({ t, a, add, del }));
+  D.commits = D.commits.map(([t, a, add, del, landed]) => ({ t, a, add, del, landed }));
 }
 
 /** Person lookup that never fails: unknown logins get a placeholder. */
