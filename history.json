@@ -284,10 +284,10 @@
  {
   "d": "2026-11-27",
   "prsOpen": 10,
-  "prsDraft": 4,
-  "issuesOpen": 89,
+  "prsDraft": 5,
+  "issuesOpen": 88,
   "issuesUnassigned": 14,
-  "issuesClosed": 324,
+  "issuesClosed": 325,
   "screens": {
    "planned": 1,
    "in-dev": 18,
