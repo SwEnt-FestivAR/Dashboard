@@ -294,5 +294,19 @@
    "developed": 4,
    "finalized": 0
   }
+ },
+ {
+  "d": "2026-11-28",
+  "prsOpen": 10,
+  "prsDraft": 5,
+  "issuesOpen": 88,
+  "issuesUnassigned": 14,
+  "issuesClosed": 325,
+  "screens": {
+   "planned": 1,
+   "in-dev": 18,
+   "developed": 4,
+   "finalized": 0
+  }
  }
 ]
